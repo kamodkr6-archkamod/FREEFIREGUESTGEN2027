@@ -1,0 +1,7 @@
+requests
+pycryptodome
+blackboxprotobuf
+httpx[http2]
+google-play-scraper
+protobuf
+protobuf-decoder
