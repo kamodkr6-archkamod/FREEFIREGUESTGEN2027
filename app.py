@@ -328,6 +328,17 @@ def get_proxy():
     global CURRENT_PROXY
     if len(PROXIES) <= 1:
         return PROXIES[0] if PROXIES else None
+
+    # Agar pool me 5+ proxies hain, har baar naya uthao
+    if len(PROXIES) >= 5:
+        now = time.time()
+        with PROXY_LOCK:
+            healthy = [p for p in PROXIES if now >= PROXY_COOLDOWN.get(_pk(p), 0)]
+        if healthy:
+            return random.choice(healthy)
+        return random.choice(PROXIES)
+
+    # Chhote pool ke liye purana behaviour
     if CURRENT_PROXY is not None:
         with PROXY_LOCK:
             if time.time() >= PROXY_COOLDOWN.get(_pk(CURRENT_PROXY), 0):
