@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
 KAMOD WILL RISE — Forge + Activator Dashboard
+Free Proxy Pool · Auto Fetch · IP Rotator · STOP · Success-Only
 Owner  : @kamod_codex
 Channel: @kamod_codex
 """
@@ -122,6 +123,26 @@ MAX_COUNT = 1000
 
 
 # ═══════════════════════════════════════════════════════════
+#  FREE PROXY POOL
+# ═══════════════════════════════════════════════════════════
+FREE_PROXY_SOURCES = [
+    "https://raw.githubusercontent.com/TheSpeedX/PROXY-List/master/http.txt",
+    "https://raw.githubusercontent.com/monosans/proxy-list/main/proxies/http.txt",
+    "https://raw.githubusercontent.com/clarketm/proxy-list/master/proxy-list-raw.txt",
+    "https://raw.githubusercontent.com/ShiftyTR/Proxy-List/master/http.txt",
+]
+PROXY_VALIDATE_URL     = "https://ffmconnect.live.gop.garenanow.com/"
+PROXY_VALIDATE_WORKERS = 50
+PROXY_FETCH_INTERVAL   = 600
+PROXY_MIN_POOL         = 15
+
+PROXY_POOL = []
+PROXY_POOL_LOCK = threading.Lock()
+PROXY_LAST_FETCH = 0.0
+PROXY_FETCH_RUNNING = False
+
+
+# ═══════════════════════════════════════════════════════════
 #  DATA POOLS
 # ═══════════════════════════════════════════════════════════
 DEVICES = [
@@ -166,52 +187,142 @@ STOP_GEN = threading.Event()
 STOP_ACT = threading.Event()
 
 STATE = {
-    "running":     False,
-    "target":      0,
-    "started_at":  0,
-    "finished_at": 0,
-    "workers":     0,
-    "region":      "IND",
-    "name_prefix": "MasteR~",
-    "last_error":  None,
-    "failed":      0,
+    "running": False, "target": 0,
+    "started_at": 0, "finished_at": 0,
+    "workers": 0, "region": "IND",
+    "name_prefix": "MasteR~", "last_error": None,
+    "failed": 0, "stopped": False,
 }
 
 ACT_STATE = {
-    "running":     False,
-    "target":      0,
-    "started_at":  0,
-    "finished_at": 0,
-    "workers":     0,
-    "last_error":  None,
-    "active":      0,
-    "failed":      0,
+    "running": False, "target": 0,
+    "started_at": 0, "finished_at": 0,
+    "workers": 0, "last_error": None,
+    "active": 0, "failed": 0, "stopped": False,
 }
 
 
 # ═══════════════════════════════════════════════════════════
-#  PROXY
+#  PROXY FUNCTIONS
 # ═══════════════════════════════════════════════════════════
+def _validate_proxy(proxy_str):
+    try:
+        p = {"http": f"http://{proxy_str}", "https": f"http://{proxy_str}"}
+        r = requests.get(PROXY_VALIDATE_URL, proxies=p, timeout=(4, 6), verify=False)
+        if r.status_code in (200, 401, 403, 404):
+            return proxy_str
+    except Exception:
+        pass
+    return None
+
+
+def _fetch_free_proxies():
+    global PROXY_POOL, PROXY_LAST_FETCH, PROXY_FETCH_RUNNING
+
+    with PROXY_POOL_LOCK:
+        if PROXY_FETCH_RUNNING:
+            return
+        PROXY_FETCH_RUNNING = True
+
+    raw = set()
+    try:
+        for url in FREE_PROXY_SOURCES:
+            try:
+                r = requests.get(url, timeout=10, verify=False)
+                if r.status_code == 200:
+                    for line in r.text.splitlines():
+                        line = line.strip()
+                        if not line: continue
+                        if "://" in line:
+                            line = line.split("://", 1)[1]
+                        parts = line.split(":")
+                        if len(parts) == 2:
+                            ip, port = parts
+                            if ip.count(".") == 3 and port.isdigit():
+                                raw.add(f"{ip}:{port}")
+            except Exception as e:
+                print(f"[PROXY] fetch {url} failed: {e}")
+
+        raw_list = list(raw)
+        print(f"[PROXY] fetched {len(raw_list)} raw proxies — validating...")
+
+        good = []
+        with ThreadPoolExecutor(max_workers=PROXY_VALIDATE_WORKERS) as ex:
+            for res in ex.map(_validate_proxy, raw_list):
+                if res:
+                    good.append(res)
+
+        with PROXY_POOL_LOCK:
+            PROXY_POOL = good
+            PROXY_LAST_FETCH = time.time()
+
+        print(f"[PROXY] {len(good)} working proxies loaded")
+
+        if CONFIG.get("use_proxy"):
+            _rebuild_proxies_from_pool()
+    finally:
+        with PROXY_POOL_LOCK:
+            PROXY_FETCH_RUNNING = False
+
+
+def _rebuild_proxies_from_pool():
+    global PROXIES, CURRENT_PROXY
+    with PROXY_POOL_LOCK:
+        pool = list(PROXY_POOL)
+    if not pool:
+        return
+    PROXIES = [{"http": f"http://{p}", "https": f"http://{p}"} for p in pool]
+    CURRENT_PROXY = PROXIES[0]
+
+
+def _proxy_watchdog():
+    global PROXY_LAST_FETCH
+    while True:
+        try:
+            now = time.time()
+            with PROXY_POOL_LOCK:
+                pool_sz = len(PROXY_POOL)
+            need = (now - PROXY_LAST_FETCH > PROXY_FETCH_INTERVAL) or (pool_sz < PROXY_MIN_POOL)
+            if need:
+                _fetch_free_proxies()
+        except Exception as e:
+            print(f"[PROXY] watchdog error: {e}")
+        time.sleep(60)
+
+
 def load_proxies():
     global PROXIES, CURRENT_PROXY
-    PROXIES = []
-    if not CONFIG["use_proxy"]:
-        PROXIES = [None]; CURRENT_PROXY = None
+
+    pf = CONFIG.get("proxy_file", "working_proxies.txt")
+    file_proxies = []
+    if os.path.exists(pf):
+        try:
+            with open(pf, encoding="utf-8") as f:
+                for line in f:
+                    line = line.strip()
+                    if line and not line.startswith("#"):
+                        file_proxies.append(line)
+        except Exception:
+            pass
+
+    with PROXY_POOL_LOCK:
+        pool = list(PROXY_POOL)
+
+    all_p = file_proxies + pool
+
+    if not CONFIG.get("use_proxy") or not all_p:
+        PROXIES = [None]
+        CURRENT_PROXY = None
         return
-    pf = CONFIG["proxy_file"]
-    if not os.path.exists(pf):
-        PROXIES = [None]; CURRENT_PROXY = None
-        return
-    with open(pf, encoding="utf-8") as f:
-        for line in f:
-            line = line.strip()
-            if line and not line.startswith("#"):
-                PROXIES.append({"http": line, "https": line})
-    PROXIES = PROXIES or [None]
+
+    PROXIES = [{"http": f"http://{p}", "https": f"http://{p}"} for p in all_p]
     CURRENT_PROXY = PROXIES[0]
+    print(f"[PROXY] loaded {len(PROXIES)} proxies (file+pool)")
+
 
 def _pk(p):
     return "__direct__" if p is None else p.get("http", "?")
+
 
 def get_proxy():
     global CURRENT_PROXY
@@ -226,11 +337,13 @@ def get_proxy():
         healthy = [p for p in PROXIES if now >= PROXY_COOLDOWN.get(_pk(p), 0)]
         return random.choice(healthy) if healthy else random.choice(PROXIES)
 
+
 def cooldown(p, sec):
     if p is None: return
     with PROXY_LOCK:
         k = _pk(p)
         PROXY_COOLDOWN[k] = max(PROXY_COOLDOWN.get(k, 0), time.time() + sec)
+
 
 def pace_proxy(p):
     k = _pk(p)
@@ -253,6 +366,7 @@ def gen_password():
                 for _ in range(32)).encode()
     ).hexdigest().upper()
 
+
 def gen_nickname():
     prefix = CONFIG["nick_prefix"]
     max_len = CONFIG["nick_max_len"]
@@ -262,8 +376,10 @@ def gen_nickname():
     digits = "".join(random.choice("0123456789") for _ in range(avail))
     return f"{prefix}{digits}".encode()
 
+
 def enc_aes(data):
     return AES.new(AES_KEY, AES.MODE_CBC, AES_IV).encrypt(pad(data, AES.block_size))
+
 
 def encode_f14(s):
     ks = [0x30,0x30,0x30,0x32,0x30,0x31,0x37,0x30,
@@ -353,6 +469,7 @@ HEADERS_LOGINBP = {
 #  SESSION
 # ═══════════════════════════════════════════════════════════
 _tl = threading.local()
+
 
 def get_session():
     s = getattr(_tl, "s", None)
@@ -512,7 +629,7 @@ def register_one(worker_id):
                 "status":         "registered",
             }
             ALL_ACCOUNTS.append(acc)
-            print(f"[GEN+] {nick_str} | uid={uid} | acc={account_id}")
+            print(f"[GEN+] {nick_str} | uid={uid} | acc={account_id} | proxy={_pk(proxy)}")
             return acc
 
         except requests.exceptions.Timeout:
@@ -530,10 +647,9 @@ def register_one(worker_id):
 
 
 # ═══════════════════════════════════════════════════════════
-#  FORGE WORKER — Success-target loop
+#  FORGE WORKER
 # ═══════════════════════════════════════════════════════════
 def _forge_worker(target_count, threads):
-    """Keep spawning until success == target_count or STOP."""
     try:
         with ThreadPoolExecutor(max_workers=threads) as ex:
             pending = set()
@@ -544,7 +660,6 @@ def _forge_worker(target_count, threads):
                 if STOP_GEN.is_set():
                     break
 
-                # Fill worker slots
                 while len(pending) < threads and submitted < max_attempts:
                     pending.add(ex.submit(register_one, submitted % threads + 1))
                     submitted += 1
@@ -554,13 +669,11 @@ def _forge_worker(target_count, threads):
 
                 done, pending = _wait(pending, return_when=_FC)
 
-                # Stop if we hit target
                 if len(ALL_ACCOUNTS) >= target_count:
                     for p in pending:
                         p.cancel()
                     break
 
-                # Stop if we exhausted max attempts
                 if submitted >= max_attempts and not pending:
                     break
     finally:
@@ -570,7 +683,7 @@ def _forge_worker(target_count, threads):
 
 
 # ═══════════════════════════════════════════════════════════
-#  ══════════════ ACTIVATOR ══════════════
+#  ACTIVATOR
 # ═══════════════════════════════════════════════════════════
 REGIONAL_LOGIN_HOSTS = {
     "IND": "https://client.ind.freefiremobile.com/",
@@ -1319,6 +1432,8 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
   .hide{display:none;}
   .region-tag{display:inline-block;padding:2px 8px;border-radius:4px;background:rgba(0,255,255,.15);
     color:#00ffff;font-size:0.7rem;font-weight:700;}
+  .proxy-tag{display:inline-block;padding:2px 8px;border-radius:4px;background:rgba(255,183,0,.15);
+    color:#ffb700;font-size:0.7rem;font-weight:700;}
 </style>
 </head>
 <body>
@@ -1332,6 +1447,7 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
   <div class="tab">
     <button id="tabGen" class="active" onclick="switchTab('gen')">⚙️ Generator</button>
     <button id="tabAct" onclick="switchTab('act')">🚀 Activator</button>
+    <button id="tabProxy" onclick="switchTab('proxy')">🌐 Proxy Pool</button>
   </div>
 
   <!-- ═══ GENERATOR ═══ -->
@@ -1360,6 +1476,13 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
         <div class="field">
           <label>Threads</label>
           <input id="gThreads" type="number" value="5" min="1" max="50">
+        </div>
+        <div class="field">
+          <label>Use Proxy</label>
+          <select id="gProxy">
+            <option value="false">OFF — direct (fast)</option>
+            <option value="true">ON — free proxy pool (safe)</option>
+          </select>
         </div>
       </div>
       <div class="btn-row">
@@ -1401,17 +1524,10 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
   <div id="panelAct" class="hide">
     <div class="card">
       <h2>🚀 Account Activator</h2>
-      <p style="color:#888;font-size:0.85rem;margin-bottom:14px;">
-        Activates all currently generated accounts. Logs each account online.
-      </p>
       <div class="row">
         <div class="field">
           <label>Threads</label>
           <input id="aThreads" type="number" value="5" min="1" max="50">
-        </div>
-        <div class="field">
-          <label>Batch Size</label>
-          <input id="aBatch" type="number" value="30" min="1" max="200">
         </div>
       </div>
       <div class="btn-row">
@@ -1459,12 +1575,40 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
     </div>
   </div>
 
+  <!-- ═══ PROXY ═══ -->
+  <div id="panelProxy" class="hide">
+    <div class="card">
+      <h2>🌐 Proxy Pool Status</h2>
+      <div class="stats">
+        <div class="stat"><div class="val" id="pSize">0</div><div class="lbl">Working Proxies</div></div>
+        <div class="stat"><div class="val" id="pFetch">—</div><div class="lbl">Fetching</div></div>
+        <div class="stat"><div class="val" id="pUse">—</div><div class="lbl">In Use</div></div>
+      </div>
+      <p style="color:#888;font-size:0.85rem;margin-top:12px;">
+        Auto-fetch every 10 minutes. <span class="proxy-tag">Free proxies = slow but safe</span>
+      </p>
+      <div class="btn-row">
+        <button class="alt" onclick="refreshProxy()">🔄 Refresh Status</button>
+        <button class="gold" onclick="fetchProxy()">⬇️ Force Fetch Now</button>
+      </div>
+    </div>
+    <div class="card">
+      <h2>🔍 Sample Proxies</h2>
+      <div class="scroll" style="max-height:300px;">
+        <table>
+          <thead><tr><th>#</th><th>Proxy</th></tr></thead>
+          <tbody id="pBody"><tr><td colspan="2" class="empty">No proxies loaded yet.</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
 </div>
 
 <div class="toast" id="toast">Done</div>
 
 <script>
-let pollGen = null, pollAct = null;
+let pollGen = null, pollAct = null, pollProxy = null;
 
 function toast(msg, isErr=false) {
   const t = document.getElementById('toast');
@@ -1478,8 +1622,11 @@ function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'
 function switchTab(tab) {
   document.getElementById('panelGen').classList.toggle('hide', tab !== 'gen');
   document.getElementById('panelAct').classList.toggle('hide', tab !== 'act');
+  document.getElementById('panelProxy').classList.toggle('hide', tab !== 'proxy');
   document.getElementById('tabGen').classList.toggle('active', tab === 'gen');
   document.getElementById('tabAct').classList.toggle('active', tab === 'act');
+  document.getElementById('tabProxy').classList.toggle('active', tab === 'proxy');
+  if (tab === 'proxy') startProxyPoll();
   refreshAll();
 }
 
@@ -1488,10 +1635,11 @@ async function startGen() {
   const region  = document.getElementById('gRegion').value;
   const count   = parseInt(document.getElementById('gCount').value) || 10;
   const threads = parseInt(document.getElementById('gThreads').value) || 5;
+  const useProxy = document.getElementById('gProxy').value;
 
   document.getElementById('btnGen').disabled = true;
   try {
-    const url = `/account_gen?name=${encodeURIComponent(name)}&regin=${encodeURIComponent(region)}&count=${count}&threads=${threads}`;
+    const url = `/account_gen?name=${encodeURIComponent(name)}&regin=${encodeURIComponent(region)}&count=${count}&threads=${threads}&use_proxy=${useProxy}`;
     const r = await fetch(url);
     const j = await r.json();
     if (r.ok) { toast(`🚀 Forge started: ${count} accounts`); startGenPoll(); }
@@ -1644,6 +1792,41 @@ function renderAct(j) {
   }
 }
 
+async function refreshProxy() {
+  try {
+    const r = await fetch('/proxy_status');
+    const j = await r.json();
+    document.getElementById('pSize').textContent  = j.pool_size || 0;
+    document.getElementById('pFetch').textContent = j.fetching ? 'YES' : 'NO';
+    document.getElementById('pUse').textContent   = j.use_proxy ? 'ON' : 'OFF';
+
+    const tb = document.getElementById('pBody');
+    const sample = j.sample || [];
+    if (sample.length === 0) {
+      tb.innerHTML = '<tr><td colspan="2" class="empty">No proxies loaded yet.</td></tr>';
+    } else {
+      tb.innerHTML = sample.map((p,i)=>`
+        <tr><td class="mono">${i+1}</td><td class="mono" style="color:#ffb700;">${esc(p)}</td></tr>
+      `).join('');
+    }
+  } catch(e){}
+}
+
+function startProxyPoll() {
+  if (pollProxy) clearInterval(pollProxy);
+  pollProxy = setInterval(refreshProxy, 3000);
+  refreshProxy();
+}
+
+async function fetchProxy() {
+  try {
+    const r = await fetch('/proxy_fetch', {method:'POST'});
+    const j = await r.json();
+    toast('⬇️ Fetching proxies...');
+    setTimeout(refreshProxy, 5000);
+  } catch(e){ toast('❌ '+e.message, true); }
+}
+
 function refreshAll() { refreshGen(); refreshAct(); }
 
 async function stopAll() {
@@ -1655,7 +1838,7 @@ async function stopAll() {
       document.getElementById('btnGen').disabled = false;
       document.getElementById('btnAct').disabled = false;
       setTimeout(refreshAll, 500);
-    } else toast('❌ ' + (j.error || 'Failed'), true);
+    }
   } catch(e) { toast('❌ '+e.message, true); }
 }
 
@@ -1665,7 +1848,6 @@ async function resetAll() {
     const r = await fetch('/reset', {method:'POST'});
     const j = await r.json();
     if (r.ok) { toast('🗑️ Reset done'); refreshAll(); }
-    else toast('❌ ' + (j.error || 'Failed'), true);
   } catch(e){ toast('❌ '+e.message, true); }
 }
 
@@ -1675,7 +1857,6 @@ async function clearAct() {
     const r = await fetch('/reset_activated', {method:'POST'});
     const j = await r.json();
     if (r.ok) { toast('🗑️ Activation cleared'); refreshAll(); }
-    else toast('❌ ' + (j.error || 'Failed'), true);
   } catch(e){ toast('❌ '+e.message, true); }
 }
 
@@ -1746,7 +1927,10 @@ class Handler(BaseHTTPRequestHandler):
 
     def log_message(self, *a): pass
 
-    def _start_forge(self, name, region, count, threads=None):
+    def _start_forge(self, name, region, count, threads=None, use_proxy=None):
+        if use_proxy is not None:
+            CONFIG["use_proxy"] = bool(use_proxy)
+
         count = max(1, min(count, MAX_COUNT))
         if threads is None: threads = min(count, 5)
         threads = max(1, min(threads, 50))
@@ -1761,7 +1945,6 @@ class Handler(BaseHTTPRequestHandler):
             CONFIG["region"]       = region
             CONFIG["nick_max_len"] = max(12, len(name) + 4)
             ALL_ACCOUNTS.clear()
-            load_proxies()
             STOP_GEN.clear()
             STATE.update({
                 "running": True, "target": count,
@@ -1770,10 +1953,26 @@ class Handler(BaseHTTPRequestHandler):
                 "name_prefix": name, "last_error": None, "failed": 0,
                 "stopped": False,
             })
+
+        # Trigger proxy fetch if needed
+        if CONFIG.get("use_proxy"):
+            with PROXY_POOL_LOCK:
+                pool_low = len(PROXY_POOL) < 5
+            if pool_low and not PROXY_FETCH_RUNNING:
+                threading.Thread(target=_fetch_free_proxies, daemon=True).start()
+            # wait a bit for pool
+            for _ in range(15):
+                with PROXY_POOL_LOCK:
+                    if len(PROXY_POOL) >= 3: break
+                time.sleep(0.5)
+
+        load_proxies()
+
         t = threading.Thread(target=_forge_worker, args=(count, threads), daemon=True)
         t.start()
         return 200, {"ok": True, "message": f"Forge started for {count}",
-                     "name": name, "region": region, "count": count, "threads": threads}
+                     "name": name, "region": region, "count": count,
+                     "threads": threads, "use_proxy": CONFIG.get("use_proxy")}
 
     def _start_activate(self, threads=5):
         with STATE_LOCK:
@@ -1812,6 +2011,8 @@ class Handler(BaseHTTPRequestHandler):
                     "GET  /accounts":                            "List generated",
                     "POST /activate?threads=5":                  "Start activator",
                     "GET  /activated":                           "List activated + failed",
+                    "GET  /proxy_status":                        "Proxy pool status",
+                    "POST /proxy_fetch":                         "Force proxy fetch",
                     "POST /stop":                                "Stop all",
                     "POST /reset":                               "Clear all",
                     "POST /reset_activated":                     "Clear activation",
@@ -1826,7 +2027,11 @@ class Handler(BaseHTTPRequestHandler):
             t_raw = qs.get("threads", [None])[0]
             try: threads = int(t_raw) if t_raw else None
             except ValueError: threads = None
-            code, obj = self._start_forge(name, region, count, threads)
+            up_raw = qs.get("use_proxy", [None])[0]
+            use_proxy = None
+            if up_raw is not None:
+                use_proxy = str(up_raw).lower() in ("1", "true", "yes", "on")
+            code, obj = self._start_forge(name, region, count, threads, use_proxy)
             return self._json(code, obj)
 
         if path == "/accounts":
@@ -1855,6 +2060,16 @@ class Handler(BaseHTTPRequestHandler):
                     "failed_list": list(ALL_FAILED),
                 })
 
+        if path == "/proxy_status":
+            with PROXY_POOL_LOCK:
+                return self._json(200, {
+                    "pool_size": len(PROXY_POOL),
+                    "last_fetch": PROXY_LAST_FETCH,
+                    "fetching": PROXY_FETCH_RUNNING,
+                    "use_proxy": CONFIG.get("use_proxy"),
+                    "sample": PROXY_POOL[:10],
+                })
+
         if path == "/status":
             with STATE_LOCK:
                 return self._json(200, {
@@ -1863,6 +2078,7 @@ class Handler(BaseHTTPRequestHandler):
                     "generated_count": len(ALL_ACCOUNTS),
                     "activated_count": len(ALL_ACTIVATED),
                     "failed_count":     len(ALL_FAILED),
+                    "proxy_pool":       len(PROXY_POOL),
                 })
 
         return self._json(404, {"error": "not found", "path": path})
@@ -1882,8 +2098,8 @@ class Handler(BaseHTTPRequestHandler):
             t_raw = req.get("threads")
             try: threads = int(t_raw) if t_raw is not None else None
             except (TypeError, ValueError): threads = None
-            CONFIG["use_proxy"] = bool(req.get("use_proxy", False))
-            code, obj = self._start_forge(name, region, count, threads)
+            use_proxy = req.get("use_proxy", None)
+            code, obj = self._start_forge(name, region, count, threads, use_proxy)
             return self._json(code, obj)
 
         if path == "/activate":
@@ -1893,6 +2109,10 @@ class Handler(BaseHTTPRequestHandler):
             threads = max(1, min(threads, 50))
             code, obj = self._start_activate(threads)
             return self._json(code, obj)
+
+        if path == "/proxy_fetch":
+            threading.Thread(target=_fetch_free_proxies, daemon=True).start()
+            return self._json(200, {"ok": True, "message": "Proxy fetch started"})
 
         if path == "/stop":
             STOP_GEN.set()
@@ -1939,6 +2159,11 @@ def main():
     print(f"Dashboard : http://0.0.0.0:{port}/")
     print(f"API       : http://0.0.0.0:{port}/api")
     print()
+
+    # Start proxy watchdog
+    threading.Thread(target=_proxy_watchdog, daemon=True).start()
+    print("[PROXY] watchdog started")
+
     server = ThreadingHTTPServer(("0.0.0.0", port), Handler)
     try:
         server.serve_forever()
