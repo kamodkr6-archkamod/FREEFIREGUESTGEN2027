@@ -1,7 +1,6 @@
 requests
+httpx
 pycryptodome
 blackboxprotobuf
-httpx[http2]
-google-play-scraper
-protobuf
 protobuf-decoder
+protobuf>=5.26.0
