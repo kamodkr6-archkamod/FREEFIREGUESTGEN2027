@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-KAMOD WILL RISE — Forge + Activator Dashboard (FIXED v8 - Selective Activation)
+KAMOD WILL RISE — Forge + Activator Dashboard (v9 - All-In-One Replit Ready)
 Owner  : @kamod_codex
 Channel: @kamod_codex
 """
@@ -30,16 +30,25 @@ except ImportError:
     import httpx
 
 try:
-    import MASTERTeam_pb2
-except ImportError:
-    print("❌ ERROR: MASTERTeam_pb2.py not found in directory!")
-    sys.exit(1)
-
-try:
     from protobuf_decoder.protobuf_decoder import Parser
 except ImportError:
     os.system("pip install protobuf-decoder -q")
     from protobuf_decoder.protobuf_decoder import Parser
+
+# ═══════════════════════════════════════════════════════════
+#  🔥 INJECTED MASTERTeam_pb2 (NO EXTRA FILES NEEDED)
+# ═══════════════════════════════════════════════════════════
+from google.protobuf import descriptor as _descriptor
+from google.protobuf import descriptor_pool as _descriptor_pool
+from google.protobuf import symbol_database as _symbol_database
+from google.protobuf.internal import builder as _builder
+
+_sym_db = _symbol_database.Default()
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0fthunderFF.proto\"\x87\x0b\n\rMajorLoginReq\x12\x12\n\nevent_time\x18\x03 \x01(\t\x12\x11\n\tgame_name\x18\x04 \x01(\t\x12\x13\n\x0bplatform_id\x18\x05 \x01(\x05\x12\x16\n\x0e\x63lient_version\x18\x07 \x01(\t\x12\x17\n\x0fsystem_software\x18\x08 \x01(\t\x12\x17\n\x0fsystem_hardware\x18\t \x01(\t\x12\x18\n\x10telecom_operator\x18\n \x01(\t\x12\x14\n\x0cnetwork_type\x18\x0b \x01(\t\x12\x14\n\x0cscreen_width\x18\x0c \x01(\r\x12\x15\n\rscreen_height\x18\r \x01(\r\x12\x12\n\nscreen_dpi\x18\x0e \x01(\t\x12\x19\n\x11processor_details\x18\x0f \x01(\t\x12\x0e\n\x06memory\x18\x10 \x01(\r\x12\x14\n\x0cgpu_renderer\x18\x11 \x01(\t\x12\x13\n\x0bgpu_version\x18\x12 \x01(\t\x12\x18\n\x10unique_device_id\x18\x13 \x01(\t\x12\x11\n\tclient_ip\x18\x14 \x01(\t\x12\x10\n\x08language\x18\x15 \x01(\t\x12\x0f\n\x07open_id\x18\x16 \x01(\t\x12\x14\n\x0copen_id_type\x18\x17 \x01(\t\x12\x13\n\x0b\x64\x65vice_type\x18\x18 \x01(\t\x12\x31\n\x10memory_available\x18\x19 \x01(\x0b\x32\x17.MajorLoginGameSecurity\x12\x14\n\x0c\x61\x63\x63\x65ss_token\x18\x1d \x01(\t\x12\x17\n\x0fplatform_sdk_id\x18\x1e \x01(\x05\x12\x1a\n\x12network_operator_a\x18) \x01(\t\x12\x16\n\x0enetwork_type_a\x18* \x01(\t\x12\x1c\n\x14\x63lient_using_version\x18\x39 \x01(\t\x12\x1e\n\x16\x65xternal_storage_total\x18< \x01(\x05\x12\"\n\x1a\x65xternal_storage_available\x18= \x01(\x05\x12\x1e\n\x16internal_storage_total\x18> \x01(\x05\x12\"\n\x1ainternal_storage_available\x18? \x01(\x05\x12#\n\x1bgame_disk_storage_available\x18@ \x01(\x05\x12\x1f\n\x17game_disk_storage_total\x18\x41 \x01(\x05\x12%\n\x1d\x65xternal_sdcard_avail_storage\x18\x42 \x01(\x05\x12%\n\x1d\x65xternal_sdcard_total_storage\x18\x43 \x01(\x05\x12\x10\n\x08login_by\x18I \x01(\x05\x12\x14\n\x0clibrary_path\x18J \x01(\t\x12\x12\n\nreg_avatar\x18L \x01(\x05\x12\x15\n\rlibrary_token\x18M \x01(\t\x12\x14\n\x0c\x63hannel_type\x18N \x01(\x05\x12\x10\n\x08\x63pu_type\x18O \x01(\x05\x12\x18\n\x10\x63pu_architecture\x18Q \x01(\t\x12\x1b\n\x13\x63lient_version_code\x18S \x01(\t\x12\x14\n\x0cgraphics_api\x18V \x01(\t\x12\x1d\n\x15supported_astc_bitset\x18W \x01(\r\x12\x1a\n\x12login_open_id_type\x18X \x01(\x05\x12\x18\n\x10\x61nalytics_detail\x18Y \x01(\x0c\x12\x14\n\x0cloading_time\x18\\ \x01(\r\x12\x17\n\x0frelease_channel\x18] \x01(\t\x12\x12\n\nextra_info\x18^ \x01(\t\x12 \n\x18\x61ndroid_engine_init_flag\x18_ \x01(\r\x12\x0f\n\x07if_push\x18\x61 \x01(\x05\x12\x0e\n\x06is_vpn\x18\x62 \x01(\x05\x12\x1c\n\x14origin_platform_type\x18\x63 \x01(\t\x12\x1d\n\x15primary_platform_type\x18\x64 \x01(\t\"?\n\x16MajorLoginGameSecurity\x12\x0f\n\x07version\x18\x06 \x01(\x05\x12\x14\n\x0chidden_value\x18\x08 \x01(\x04\"\x82\x01\n\rMajorLoginRes\x12\x12\n\naccount_id\x18\x01 \x01(\x04\x12\x0e\n\x06region\x18\x02 \x01(\t\x12\r\n\x05token\x18\x08 \x01(\t\x12\x0b\n\x03url\x18\n \x01(\t\x12\x13\n\x0bserver_time\x18\x15 \x01(\x04\x12\x0e\n\x06\x61\x65s_ak\x18\x16 \x01(\x0c\x12\x0c\n\x04iv_i\x18\x17 \x01(\x0c\"Z\n\x0fGetLoginDataRes\x12\x10\n\x08nickname\x18\x04 \x01(\t\x12\x18\n\x10\x66unctional_addrs\x18\x0e \x01(\t\x12\x1b\n\x13informational_addrs\x18  \x01(\t\"\xe0\x01\n\nStartMatch\x12!\n\x04main\x18\x02 \x01(\x0b\x32\x13.StartMatch.nested1\x1a\xae\x01\n\x07nested1\x12\x30\n\x0bregion_list\x18\x07 \x03(\x0b\x32\x1b.StartMatch.nested1.nested2\x12\x33\n\x0e\x63lient_version\x18\x0c \x01(\x0b\x32\x1b.StartMatch.nested1.nested3\x1a\x19\n\x07nested2\x12\x0e\n\x06region\x18\x03 \x01(\t\x1a!\n\x07nested3\x12\x16\n\x0eremote_version\x18\x08 \x01(\tb\x06proto3')
+_globals = globals()
+_builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
+_builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'thunderFF_pb2', _globals)
+# ═══════════════════════════════════════════════════════════
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
@@ -506,7 +515,7 @@ async def _get_access_token(uid, password):
 
 async def _build_majorlogin_payload_pb2(open_id, access_token, platform, client_version, device_info):
     try:
-        req = MASTERTeam_pb2.MajorLoginReq()
+        req = _globals['MajorLoginReq']()
         req.event_time = str(datetime.now())[:-7]
         req.game_name = "free fire"
         req.platform_id = int(platform)
@@ -570,19 +579,19 @@ async def _try_majorlogin_pb2(base_url, data, release_version):
         r = await client.post(url, headers=hdrs, content=data)
         if r.status_code != 200 or len(r.content) < 20: return None
         try:
-            res_proto = MASTERTeam_pb2.MajorLoginRes()
+            res_proto = _globals['MajorLoginRes']()
             res_proto.ParseFromString(r.content)
             if res_proto.region and res_proto.token: return res_proto
         except Exception: pass
         if len(r.content) > 64:
             try:
-                res_proto = MASTERTeam_pb2.MajorLoginRes()
+                res_proto = _globals['MajorLoginRes']()
                 res_proto.ParseFromString(r.content[64:])
                 if res_proto.region and res_proto.token: return res_proto
             except Exception: pass
         for offset in range(min(160, len(r.content))):
             try:
-                candidate = MASTERTeam_pb2.MajorLoginRes()
+                candidate = _globals['MajorLoginRes']()
                 candidate.ParseFromString(r.content[offset:])
                 if candidate.region and candidate.token: return candidate
             except Exception: continue
@@ -600,7 +609,7 @@ async def _try_getlogin_pb2(base_url, data, token, release_version):
     try:
         r = await client.post(url, headers=hdrs, content=data)
         if r.status_code != 200: return None
-        res_proto = MASTERTeam_pb2.GetLoginDataRes()
+        res_proto = _globals['GetLoginDataRes']()
         parsed = False
         try:
             res_proto.ParseFromString(r.content)
@@ -609,7 +618,7 @@ async def _try_getlogin_pb2(base_url, data, token, release_version):
         if not parsed:
             for offset in range(min(160, len(r.content))):
                 try:
-                    cand = MASTERTeam_pb2.GetLoginDataRes()
+                    cand = _globals['GetLoginDataRes']()
                     cand.ParseFromString(r.content[offset:])
                     if cand.functional_addrs or cand.informational_addrs:
                         res_proto = cand; parsed = True; break
@@ -1281,7 +1290,6 @@ class Handler(BaseHTTPRequestHandler):
         with STATE_LOCK:
             if ACT_STATE["running"]: return 409, {"error": "Activation already running"}
             
-        # Load accounts from selected file
         accounts_to_activate = _load_storage(filename)
         if not accounts_to_activate:
             return 400, {"error": f"No accounts found in {filename}"}
@@ -1317,9 +1325,6 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json(404, {"error": "File not found"})
             return self._json(200, _load_storage(fname))
             
-        if path == "/api":
-            return self._json(200, {"owner": "@kamod_codex", "channel": "@kamod_codex", "endpoints": {"GET /": "Dashboard", "GET /list_files?type=gen":"List Batch Files", "GET /get_file?name=X":"Get File Content"}})
-            
         if path == "/account_gen":
             name = qs.get("name", qs.get("nick", ["MasteR~"]))[0]; region = qs.get("regin", qs.get("region", ["IND"]))[0]
             try: count = int(qs.get("count", ["10"])[0])
@@ -1345,9 +1350,6 @@ class Handler(BaseHTTPRequestHandler):
             with PROXY_POOL_LOCK:
                 return self._json(200, {"pool_size": len(PROXY_POOL), "last_fetch": PROXY_LAST_FETCH, "fetching": PROXY_FETCH_RUNNING, "use_proxy": CONFIG.get("use_proxy"), "sample": PROXY_POOL[:10]})
                 
-        if path == "/status":
-            with STATE_LOCK:
-                return self._json(200, {"generator": dict(STATE), "activator": dict(ACT_STATE), "generated_count": len(ALL_ACCOUNTS), "activated_count": len(ALL_ACTIVATED), "failed_count": len(ALL_FAILED), "proxy_pool": len(PROXY_POOL)})
         return self._json(404, {"error": "not found", "path": path})
 
     def do_POST(self):
