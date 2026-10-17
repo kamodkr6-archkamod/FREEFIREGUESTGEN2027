@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 """
 KAMOD WILL RISE — Forge + Activator Dashboard
+Free Proxy Pool · Auto Fetch · IP Rotator · STOP · Success-Only
 Owner  : @kamod_codex
 Channel: @kamod_codex
 """
 
-import os, sys, json, time, random, string, hashlib, hmac, uuid, asyncio, socket
+import os, sys, json, time, random, string, hashlib, hmac, uuid, asyncio, socket, ipaddress
 import threading
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, wait as _wait, FIRST_COMPLETED as _FC
 from datetime import datetime, timezone
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlparse, parse_qs
@@ -26,10 +27,63 @@ except ImportError:
 try:
     import httpx
 except ImportError:
-    os.system("pip install httpx[http2] -q")
+    os.system("pip install httpx -q")
     import httpx
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+
+# ═══════════════════════════════════════════════════════════
+#  IP ROTATOR
+# ═══════════════════════════════════════════════════════════
+class IPRotator:
+    REGION_IP_CIDRS = {
+        "BD":  ["27.147.128.0/17","37.111.192.0/19","49.0.32.0/20","59.152.96.0/20",
+                "114.130.0.0/17","115.127.0.0/17","119.30.32.0/20","123.49.0.0/18",
+                "103.220.220.0/22","103.108.140.0/22","103.242.20.0/22"],
+        "IND": ["1.6.0.0/15","1.38.0.0/15","14.96.0.0/15","27.4.0.0/14","27.56.0.0/13",
+                "49.36.0.0/14","103.25.12.0/22","103.56.12.0/22","115.99.0.0/16"],
+        "ID":  ["36.64.0.0/11","101.255.0.0/16","103.10.60.0/22","114.120.0.0/13"],
+        "TH":  ["1.46.0.0/15","27.55.0.0/16","49.228.0.0/15","101.108.0.0/15"],
+        "VN":  ["1.52.0.0/14","14.160.0.0/11","27.64.0.0/12","113.160.0.0/12"],
+        "PK":  ["39.32.0.0/11","111.68.96.0/19","182.176.0.0/12"],
+        "ME":  ["2.88.0.0/13","5.100.0.0/14","31.166.0.0/15","37.104.0.0/13"],
+        "BR":  ["177.0.0.0/13","186.192.0.0/12","189.0.0.0/11","200.96.0.0/12"],
+        "EU":  ["2.16.0.0/12","5.144.0.0/14","31.40.0.0/14","46.16.0.0/14"],
+        "CIS": ["2.92.0.0/14","5.136.0.0/13","31.128.0.0/12","46.0.0.0/12"],
+        "NA":  ["3.0.0.0/9","8.0.0.0/12","12.0.0.0/10","24.0.0.0/10"],
+        "SAC": ["186.0.0.0/10","190.0.0.0/11","200.0.0.0/11"],
+        "TW":  ["1.160.0.0/12","36.224.0.0/12","114.24.0.0/12","118.160.0.0/12"],
+    }
+    _cache = {}
+    _cache_lock = threading.Lock()
+
+    @classmethod
+    def get_random_ip(cls, region="IND"):
+        region = (region or "IND").upper()
+        with cls._cache_lock:
+            if region not in cls._cache:
+                cidrs = cls.REGION_IP_CIDRS.get(region)
+                if not cidrs:
+                    cls._cache[region] = []
+                else:
+                    hosts = []
+                    for cidr in cidrs:
+                        try:
+                            net = ipaddress.ip_network(cidr, strict=False)
+                            total = 2 ** (32 - net.prefixlen)
+                            if total > 5000:
+                                for _ in range(2000):
+                                    hosts.append(str(net.network_address + random.randint(1, total - 2)))
+                            else:
+                                hosts.extend([str(ip) for ip in net.hosts()])
+                        except Exception:
+                            continue
+                    cls._cache[region] = hosts
+            pool = cls._cache.get(region) or []
+            if not pool:
+                return f"{random.randint(103,223)}.{random.randint(10,250)}.{random.randint(10,250)}.{random.randint(10,250)}"
+            return random.choice(pool)
 
 
 # ═══════════════════════════════════════════════════════════
@@ -69,16 +123,28 @@ MAX_COUNT = 1000
 
 
 # ═══════════════════════════════════════════════════════════
+#  FREE PROXY POOL
+# ═══════════════════════════════════════════════════════════
+FREE_PROXY_SOURCES = [
+    "https://raw.githubusercontent.com/TheSpeedX/PROXY-List/master/http.txt",
+    "https://raw.githubusercontent.com/monosans/proxy-list/main/proxies/http.txt",
+    "https://raw.githubusercontent.com/clarketm/proxy-list/master/proxy-list-raw.txt",
+    "https://raw.githubusercontent.com/ShiftyTR/Proxy-List/master/http.txt",
+]
+PROXY_VALIDATE_URL     = "https://ffmconnect.live.gop.garenanow.com/"
+PROXY_VALIDATE_WORKERS = 50
+PROXY_FETCH_INTERVAL   = 600
+PROXY_MIN_POOL         = 15
+
+PROXY_POOL = []
+PROXY_POOL_LOCK = threading.Lock()
+PROXY_LAST_FETCH = 0.0
+PROXY_FETCH_RUNNING = False
+
+
+# ═══════════════════════════════════════════════════════════
 #  DATA POOLS
 # ═══════════════════════════════════════════════════════════
-INDIAN_IPS = [
-    "49.36.180.10", "49.36.180.22", "49.36.181.15", "49.36.182.45",
-    "103.87.24.10", "103.87.24.25", "103.87.25.14", "103.87.25.30",
-    "115.99.10.20", "115.99.10.35", "115.99.11.40", "115.99.11.55",
-    "49.36.83.10", "49.36.83.22", "49.36.84.15", "49.36.84.30",
-    "103.25.12.10", "103.25.12.25", "103.25.13.14", "103.25.13.30",
-]
-
 DEVICES = [
     ("Asus ASUS_AI2501_B", "Android OS 12 / API-31 (SP1A.210812.016.C2/user.dxu.20260701.180839)", "Adreno (TM) 640", "OpenGL ES 3.2"),
     ("Redmi Note 12 Pro",  "Android OS 13 / API-33 (TP1A.220624.014)", "Adreno (TM) 618", "OpenGL ES 3.2"),
@@ -117,58 +183,162 @@ PROXY_COOLDOWN = {}
 CURRENT_PROXY = None
 STATE_LOCK = threading.Lock()
 
+STOP_GEN = threading.Event()
+STOP_ACT = threading.Event()
+
 STATE = {
-    "running":     False,
-    "target":      0,
-    "started_at":  0,
-    "finished_at": 0,
-    "workers":     0,
-    "region":      "IND",
-    "name_prefix": "MasteR~",
-    "last_error":  None,
-    "failed":      0,
+    "running": False, "target": 0,
+    "started_at": 0, "finished_at": 0,
+    "workers": 0, "region": "IND",
+    "name_prefix": "MasteR~", "last_error": None,
+    "failed": 0, "stopped": False,
 }
 
 ACT_STATE = {
-    "running":     False,
-    "target":      0,
-    "started_at":  0,
-    "finished_at": 0,
-    "workers":     0,
-    "last_error":  None,
-    "active":      0,
-    "failed":      0,
+    "running": False, "target": 0,
+    "started_at": 0, "finished_at": 0,
+    "workers": 0, "last_error": None,
+    "active": 0, "failed": 0, "stopped": False,
 }
 
 
 # ═══════════════════════════════════════════════════════════
-#  PROXY
+#  PROXY FUNCTIONS
 # ═══════════════════════════════════════════════════════════
+def _validate_proxy(proxy_str):
+    try:
+        p = {"http": f"http://{proxy_str}", "https": f"http://{proxy_str}"}
+        r = requests.get(PROXY_VALIDATE_URL, proxies=p, timeout=(4, 6), verify=False)
+        if r.status_code in (200, 401, 403, 404):
+            return proxy_str
+    except Exception:
+        pass
+    return None
+
+
+def _fetch_free_proxies():
+    global PROXY_POOL, PROXY_LAST_FETCH, PROXY_FETCH_RUNNING
+
+    with PROXY_POOL_LOCK:
+        if PROXY_FETCH_RUNNING:
+            return
+        PROXY_FETCH_RUNNING = True
+
+    raw = set()
+    try:
+        for url in FREE_PROXY_SOURCES:
+            try:
+                r = requests.get(url, timeout=10, verify=False)
+                if r.status_code == 200:
+                    for line in r.text.splitlines():
+                        line = line.strip()
+                        if not line: continue
+                        if "://" in line:
+                            line = line.split("://", 1)[1]
+                        parts = line.split(":")
+                        if len(parts) == 2:
+                            ip, port = parts
+                            if ip.count(".") == 3 and port.isdigit():
+                                raw.add(f"{ip}:{port}")
+            except Exception as e:
+                print(f"[PROXY] fetch {url} failed: {e}")
+
+        raw_list = list(raw)
+        print(f"[PROXY] fetched {len(raw_list)} raw proxies — validating...")
+
+        good = []
+        with ThreadPoolExecutor(max_workers=PROXY_VALIDATE_WORKERS) as ex:
+            for res in ex.map(_validate_proxy, raw_list):
+                if res:
+                    good.append(res)
+
+        with PROXY_POOL_LOCK:
+            PROXY_POOL = good
+            PROXY_LAST_FETCH = time.time()
+
+        print(f"[PROXY] {len(good)} working proxies loaded")
+
+        if CONFIG.get("use_proxy"):
+            _rebuild_proxies_from_pool()
+    finally:
+        with PROXY_POOL_LOCK:
+            PROXY_FETCH_RUNNING = False
+
+
+def _rebuild_proxies_from_pool():
+    global PROXIES, CURRENT_PROXY
+    with PROXY_POOL_LOCK:
+        pool = list(PROXY_POOL)
+    if not pool:
+        return
+    PROXIES = [{"http": f"http://{p}", "https": f"http://{p}"} for p in pool]
+    CURRENT_PROXY = PROXIES[0]
+
+
+def _proxy_watchdog():
+    global PROXY_LAST_FETCH
+    while True:
+        try:
+            now = time.time()
+            with PROXY_POOL_LOCK:
+                pool_sz = len(PROXY_POOL)
+            need = (now - PROXY_LAST_FETCH > PROXY_FETCH_INTERVAL) or (pool_sz < PROXY_MIN_POOL)
+            if need:
+                _fetch_free_proxies()
+        except Exception as e:
+            print(f"[PROXY] watchdog error: {e}")
+        time.sleep(60)
+
+
 def load_proxies():
     global PROXIES, CURRENT_PROXY
-    PROXIES = []
-    if not CONFIG["use_proxy"]:
-        PROXIES = [None]; CURRENT_PROXY = None
+
+    pf = CONFIG.get("proxy_file", "working_proxies.txt")
+    file_proxies = []
+    if os.path.exists(pf):
+        try:
+            with open(pf, encoding="utf-8") as f:
+                for line in f:
+                    line = line.strip()
+                    if line and not line.startswith("#"):
+                        file_proxies.append(line)
+        except Exception:
+            pass
+
+    with PROXY_POOL_LOCK:
+        pool = list(PROXY_POOL)
+
+    all_p = file_proxies + pool
+
+    if not CONFIG.get("use_proxy") or not all_p:
+        PROXIES = [None]
+        CURRENT_PROXY = None
         return
-    pf = CONFIG["proxy_file"]
-    if not os.path.exists(pf):
-        PROXIES = [None]; CURRENT_PROXY = None
-        return
-    with open(pf, encoding="utf-8") as f:
-        for line in f:
-            line = line.strip()
-            if line and not line.startswith("#"):
-                PROXIES.append({"http": line, "https": line})
-    PROXIES = PROXIES or [None]
+
+    PROXIES = [{"http": f"http://{p}", "https": f"http://{p}"} for p in all_p]
     CURRENT_PROXY = PROXIES[0]
+    print(f"[PROXY] loaded {len(PROXIES)} proxies (file+pool)")
+
 
 def _pk(p):
     return "__direct__" if p is None else p.get("http", "?")
+
 
 def get_proxy():
     global CURRENT_PROXY
     if len(PROXIES) <= 1:
         return PROXIES[0] if PROXIES else None
+
+    # Agar pool me 5+ proxies hain, har baar naya uthao
+    if len(PROXIES) >= 5:
+        now = time.time()
+        with PROXY_LOCK:
+            healthy = [p for p in PROXIES if now >= PROXY_COOLDOWN.get(_pk(p), 0)]
+        if healthy:
+            return random.choice(healthy)
+        return random.choice(PROXIES)
+
+    # Chhote pool ke liye purana behaviour
     if CURRENT_PROXY is not None:
         with PROXY_LOCK:
             if time.time() >= PROXY_COOLDOWN.get(_pk(CURRENT_PROXY), 0):
@@ -178,11 +348,13 @@ def get_proxy():
         healthy = [p for p in PROXIES if now >= PROXY_COOLDOWN.get(_pk(p), 0)]
         return random.choice(healthy) if healthy else random.choice(PROXIES)
 
+
 def cooldown(p, sec):
     if p is None: return
     with PROXY_LOCK:
         k = _pk(p)
         PROXY_COOLDOWN[k] = max(PROXY_COOLDOWN.get(k, 0), time.time() + sec)
+
 
 def pace_proxy(p):
     k = _pk(p)
@@ -197,13 +369,14 @@ def pace_proxy(p):
 
 
 # ═══════════════════════════════════════════════════════════
-#  HELPERS (gen side)
+#  HELPERS
 # ═══════════════════════════════════════════════════════════
 def gen_password():
     return hashlib.sha256(
         ''.join(random.choice(string.ascii_letters + string.digits)
                 for _ in range(32)).encode()
     ).hexdigest().upper()
+
 
 def gen_nickname():
     prefix = CONFIG["nick_prefix"]
@@ -214,8 +387,10 @@ def gen_nickname():
     digits = "".join(random.choice("0123456789") for _ in range(avail))
     return f"{prefix}{digits}".encode()
 
+
 def enc_aes(data):
     return AES.new(AES_KEY, AES.MODE_CBC, AES_IV).encrypt(pad(data, AES.block_size))
+
 
 def encode_f14(s):
     ks = [0x30,0x30,0x30,0x32,0x30,0x31,0x37,0x30,
@@ -306,6 +481,7 @@ HEADERS_LOGINBP = {
 # ═══════════════════════════════════════════════════════════
 _tl = threading.local()
 
+
 def get_session():
     s = getattr(_tl, "s", None)
     if s: return s
@@ -317,7 +493,8 @@ def get_session():
 
 
 def _build_login_meta(open_id, access_token):
-    ip = random.choice(INDIAN_IPS)
+    region = CONFIG.get("region", "IND")
+    ip = IPRotator.get_random_ip(region)
     model, os_str, gpu, gpu_full = random.choice(DEVICES)
     return {
         '3': datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S').encode(),
@@ -334,7 +511,7 @@ def _build_login_meta(open_id, access_token):
         '21': b'en', '22': open_id.encode(),
         '23': b'4', '24': b'Handheld',
         '25': model.encode(),
-        '26': b'IND',
+        '26': region.encode(),
         '29': access_token.encode(), '30': 1,
         '41': b'Jio', '42': b'WIFI',
         '57': b'1ac4b80ecf0478a44203bf8fac6120f5',
@@ -361,10 +538,17 @@ def _build_login_meta(open_id, access_token):
 # ═══════════════════════════════════════════════════════════
 def register_one(worker_id):
     global TOTAL
+
+    if STOP_GEN.is_set():
+        return None
+
     session = get_session()
     proxy = get_proxy()
 
     for attempt in range(1, MAX_RETRIES + 1):
+        if STOP_GEN.is_set():
+            return None
+
         try:
             pace_proxy(proxy)
             password = gen_password()
@@ -456,7 +640,7 @@ def register_one(worker_id):
                 "status":         "registered",
             }
             ALL_ACCOUNTS.append(acc)
-            print(f"[GEN+] {nick_str} | uid={uid} | acc={account_id}")
+            print(f"[GEN+] {nick_str} | uid={uid} | acc={account_id} | proxy={_pk(proxy)}")
             return acc
 
         except requests.exceptions.Timeout:
@@ -473,13 +657,36 @@ def register_one(worker_id):
     return None
 
 
-def _forge_worker(count, threads):
+# ═══════════════════════════════════════════════════════════
+#  FORGE WORKER
+# ═══════════════════════════════════════════════════════════
+def _forge_worker(target_count, threads):
     try:
         with ThreadPoolExecutor(max_workers=threads) as ex:
-            futures = [ex.submit(register_one, i % threads + 1) for i in range(count)]
-            for f in futures:
-                try: f.result()
-                except Exception: pass
+            pending = set()
+            submitted = 0
+            max_attempts = max(target_count * 3, target_count + 20)
+
+            while True:
+                if STOP_GEN.is_set():
+                    break
+
+                while len(pending) < threads and submitted < max_attempts:
+                    pending.add(ex.submit(register_one, submitted % threads + 1))
+                    submitted += 1
+
+                if not pending:
+                    break
+
+                done, pending = _wait(pending, return_when=_FC)
+
+                if len(ALL_ACCOUNTS) >= target_count:
+                    for p in pending:
+                        p.cancel()
+                    break
+
+                if submitted >= max_attempts and not pending:
+                    break
     finally:
         with STATE_LOCK:
             STATE["running"] = False
@@ -487,10 +694,8 @@ def _forge_worker(count, threads):
 
 
 # ═══════════════════════════════════════════════════════════
-#  ══════════════ ACTIVATOR ══════════════
+#  ACTIVATOR
 # ═══════════════════════════════════════════════════════════
-#  Activator code adapted from act.py, no CLI, integrated into API.
-
 REGIONAL_LOGIN_HOSTS = {
     "IND": "https://client.ind.freefiremobile.com/",
     "BD":  "https://client.bd.freefiremobile.com/",
@@ -522,7 +727,6 @@ MAX_KEEPALIVE    = 500
 HOST_RACE_TIMEOUT = 6.0
 
 _act_client = None
-_act_client_lock = None
 
 
 def _get_act_client():
@@ -536,18 +740,16 @@ def _get_act_client():
                 max_keepalive_connections=MAX_KEEPALIVE,
             ),
             follow_redirects=True,
-            http2=False,   # avoid h2 dependency issues
+            http2=False,
         )
     return _act_client
 
 
-# ── AES encrypt helper (act uses own key/iv) ────────────
 def _act_aes_encrypt(payload: bytes) -> bytes:
     cipher = AES.new(ACT_AES_KEY, AES.MODE_CBC, ACT_AES_IV)
     return cipher.encrypt(pad(payload, AES.block_size))
 
 
-# ── Manual protobuf ─────────────────────────────────────
 def _encode_varint(n: int) -> bytes:
     if n < 0: return b''
     out = bytearray()
@@ -580,7 +782,7 @@ def _build_majorlogin_payload(open_id, access_token, platform, client_version, d
             3:  str(datetime.now())[:-7],
             4:  "free fire",
             5:  "1",
-            7:  str(client_version) if client_version else "1.132.8",
+            7:  str(client_version) if client_version else "1.132.9",
             8:  str(device_info.get("system_software", "Android OS 15 / API-35")),
             9:  "Handheld",
             10: "Telkomsel",
@@ -628,18 +830,10 @@ def _build_majorlogin_payload(open_id, access_token, platform, client_version, d
         return None
 
 
-# ── Parse response helpers (simple) ─────────────────────
 def _parse_majorlogin(raw: bytes):
-    """Return dict {account_id, region, token, url, server_time, aes_ak, iv_i} or None."""
-    try:
-        from google.protobuf.internal.decoder import _DecodeVarint
-    except Exception:
-        return None
-
     def _parse_fields(data):
         out = {}
-        i = 0
-        n = len(data)
+        i = 0; n = len(data)
         while i < n:
             try:
                 key = 0; shift = 0
@@ -650,8 +844,7 @@ def _parse_majorlogin(raw: bytes):
                     if not (b & 0x80): break
                     shift += 7
                     if shift > 63: return out
-                field_no = key >> 3
-                wire = key & 0x07
+                fn = key >> 3; wire = key & 0x07
                 if wire == 0:
                     val = 0; shift = 0
                     while True:
@@ -661,7 +854,7 @@ def _parse_majorlogin(raw: bytes):
                         if not (b & 0x80): break
                         shift += 7
                         if shift > 63: return out
-                    out[field_no] = val
+                    out[fn] = val
                 elif wire == 2:
                     ln = 0; shift = 0
                     while True:
@@ -672,13 +865,10 @@ def _parse_majorlogin(raw: bytes):
                         shift += 7
                         if shift > 63: return out
                     if i + ln > n: return out
-                    out[field_no] = data[i:i+ln]; i += ln
-                elif wire == 5:
-                    i += 4
-                elif wire == 1:
-                    i += 8
-                else:
-                    return out
+                    out[fn] = data[i:i+ln]; i += ln
+                elif wire == 5: i += 4
+                elif wire == 1: i += 8
+                else: return out
             except Exception:
                 return out
         return out
@@ -702,11 +892,6 @@ def _parse_majorlogin(raw: bytes):
 
 
 def _parse_getlogin(raw: bytes):
-    try:
-        from google.protobuf.internal.decoder import _DecodeVarint
-    except Exception:
-        return None
-
     def _parse_fields(data):
         out = {}
         i = 0; n = len(data)
@@ -720,8 +905,7 @@ def _parse_getlogin(raw: bytes):
                     if not (b & 0x80): break
                     shift += 7
                     if shift > 63: return out
-                field_no = key >> 3
-                wire = key & 0x07
+                fn = key >> 3; wire = key & 0x07
                 if wire == 0:
                     val = 0; shift = 0
                     while True:
@@ -731,7 +915,7 @@ def _parse_getlogin(raw: bytes):
                         if not (b & 0x80): break
                         shift += 7
                         if shift > 63: return out
-                    out[field_no] = val
+                    out[fn] = val
                 elif wire == 2:
                     ln = 0; shift = 0
                     while True:
@@ -742,7 +926,7 @@ def _parse_getlogin(raw: bytes):
                         shift += 7
                         if shift > 63: return out
                     if i + ln > n: return out
-                    out[field_no] = data[i:i+ln]; i += ln
+                    out[fn] = data[i:i+ln]; i += ln
                 elif wire == 5: i += 4
                 elif wire == 1: i += 8
                 else: return out
@@ -770,7 +954,6 @@ def _parse_getlogin(raw: bytes):
     return None
 
 
-# ── Version config (activator) ──────────────────────────
 _ACT_VERSION_CACHE = None
 _ACT_VERSION_TIME = 0
 _ACT_VERSION_TTL = 1800.0
@@ -847,7 +1030,6 @@ async def _get_access_token(uid, password):
     return None
 
 
-# ── TCP startup packet ──────────────────────────────────
 async def _build_tcp_startup_packet(account_id, token, server_time, key, iv, region="IND", typ='OnLine'):
     uid_hex = f"{int(account_id):016x}"
     timestamp_hex = f"{int(server_time):08x}"
@@ -902,7 +1084,6 @@ def _get_sem():
     return _ACT_SEMAPHORE
 
 
-# ── device helper for activator ─────────────────────────
 def _random_act_device(uid_seed):
     brand, model, gpu, os_ver = random.choice([
         ("Samsung", "SM-G998B",  "Adreno (TM) 660", "Android OS 12 / API-31"),
@@ -920,18 +1101,23 @@ def _random_act_device(uid_seed):
         "screen_dpi":    str(random.randint(300, 420)),
         "memory":        random.randint(2800, 6500),
         "processor_details": f"ARM64 FP ASIMD AES VMH | {random.randint(2200, 3200)} | {random.randint(6, 12)}",
-        "client_ip": f"{random.randint(103, 223)}.{random.randint(10, 250)}.{random.randint(10, 250)}.{random.randint(10, 250)}",
+        "client_ip": IPRotator.get_random_ip("IND"),
     }
 
 
-# ── Single account activation ───────────────────────────
 async def _activate_single(acc, idx, total):
+    if STOP_ACT.is_set():
+        return False
+
     uid_input  = str(acc.get("uid", ""))
     password   = acc.get("password", "")
     input_nick = acc.get("account_name", "")
 
     try:
         async with _get_sem():
+            if STOP_ACT.is_set():
+                return False
+
             release_version, client_version, server_url = await _act_version_config("IND")
             tg = await _get_access_token(uid_input, password)
             if tg is None:
@@ -946,7 +1132,6 @@ async def _activate_single(acc, idx, total):
 
             client = _get_act_client()
 
-            # MajorLogin (race over hosts)
             candidates = [server_url.rstrip("/") + "/"] + [h.rstrip("/") + "/" for h in MAJORLOGIN_FALLBACK_HOSTS]
 
             async def _try_ml(base):
@@ -997,8 +1182,8 @@ async def _activate_single(acc, idx, total):
             if ml is None:
                 raise Exception("MajorLogin failed")
 
-            # GetLoginData
             region = ml.get("region") or "IND"
+
             async def _try_gl(base):
                 try:
                     h = {
@@ -1060,7 +1245,6 @@ async def _activate_single(acc, idx, total):
             if not addrs:
                 raise Exception("no functional_addrs")
 
-            # TCP connect + online
             ip, port = addrs.split(":")
             rip = await _resolve_host(ip)
             reader, writer = await asyncio.open_connection(rip, int(port))
@@ -1085,6 +1269,8 @@ async def _activate_single(acc, idx, total):
 
             start = time.time()
             while time.time() - start < ONLINE_DURATION:
+                if STOP_ACT.is_set():
+                    break
                 try:
                     data = await asyncio.wait_for(reader.read(4096), timeout=0.3)
                     if not data: break
@@ -1138,14 +1324,16 @@ async def _activate_single(acc, idx, total):
 
 
 async def _activate_batch(batch, start_idx, total):
-    sem_tasks = []
+    tasks = []
     for i, acc in enumerate(batch):
-        sem_tasks.append(_activate_single(acc, start_idx + i + 1, total))
-    await asyncio.gather(*sem_tasks, return_exceptions=True)
+        if STOP_ACT.is_set():
+            break
+        tasks.append(_activate_single(acc, start_idx + i + 1, total))
+    if tasks:
+        await asyncio.gather(*tasks, return_exceptions=True)
 
 
 def _run_activator_sync(accounts, threads):
-    """Run activator in this thread with its own event loop."""
     global _act_client, _ACT_SEMAPHORE
     _act_client = None
     _ACT_SEMAPHORE = None
@@ -1153,6 +1341,8 @@ def _run_activator_sync(accounts, threads):
     async def _main():
         total = len(accounts)
         for i in range(0, total, BATCH_SIZE):
+            if STOP_ACT.is_set():
+                break
             batch = accounts[i:i + BATCH_SIZE]
             await _activate_batch(batch, i, total)
             await asyncio.sleep(BATCH_INTERVAL)
@@ -1192,13 +1382,9 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
 <title>💀 KAMOD DEVILS WILL RISE</title>
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
-  body {
-    font-family: 'Segoe UI', system-ui, sans-serif;
-    background:#0a0510; color:#eee; min-height:100vh; padding:20px;
-    background-image:
-      radial-gradient(circle at 20% 10%, rgba(255,20,147,0.15), transparent 40%),
-      radial-gradient(circle at 80% 80%, rgba(0,255,255,0.10), transparent 40%);
-  }
+  body { font-family:'Segoe UI',system-ui,sans-serif; background:#0a0510; color:#eee; min-height:100vh; padding:20px;
+    background-image: radial-gradient(circle at 20% 10%, rgba(255,20,147,0.15), transparent 40%),
+                      radial-gradient(circle at 80% 80%, rgba(0,255,255,0.10), transparent 40%); }
   .container{max-width:1300px;margin:0 auto;}
   header{text-align:center;margin-bottom:26px;padding-bottom:18px;border-bottom:2px solid rgba(255,20,147,0.3);}
   h1{font-size:2.1rem;background:linear-gradient(90deg,#ff1493,#da70d6,#00ffff,#40e0d0);
@@ -1235,6 +1421,7 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
   .pill-run{background:rgba(255,20,147,.2);color:#ff69b4;border:1px solid #ff1493;}
   .pill-idle{background:rgba(128,128,128,.2);color:#aaa;border:1px solid #555;}
   .pill-done{background:rgba(0,255,127,.15);color:#00ff7f;border:1px solid #00c853;}
+  .pill-stop{background:rgba(230,57,70,.2);color:#ff8a8a;border:1px solid #e63946;}
   table{width:100%;border-collapse:collapse;font-size:0.82rem;margin-top:10px;}
   th,td{text-align:left;padding:9px 10px;border-bottom:1px solid rgba(255,255,255,0.06);}
   th{color:#ff69b4;text-transform:uppercase;font-size:0.7rem;letter-spacing:1px;}
@@ -1256,6 +1443,8 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
   .hide{display:none;}
   .region-tag{display:inline-block;padding:2px 8px;border-radius:4px;background:rgba(0,255,255,.15);
     color:#00ffff;font-size:0.7rem;font-weight:700;}
+  .proxy-tag{display:inline-block;padding:2px 8px;border-radius:4px;background:rgba(255,183,0,.15);
+    color:#ffb700;font-size:0.7rem;font-weight:700;}
 </style>
 </head>
 <body>
@@ -1266,13 +1455,13 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
     <div class="owner">Owner @kamod_codex · Channel @kamod_codex</div>
   </header>
 
-  <!-- TABS -->
   <div class="tab">
     <button id="tabGen" class="active" onclick="switchTab('gen')">⚙️ Generator</button>
     <button id="tabAct" onclick="switchTab('act')">🚀 Activator</button>
+    <button id="tabProxy" onclick="switchTab('proxy')">🌐 Proxy Pool</button>
   </div>
 
-  <!-- ═══════ GENERATOR PANEL ═══════ -->
+  <!-- ═══ GENERATOR ═══ -->
   <div id="panelGen">
     <div class="card">
       <h2>⚙️ Account Generator</h2>
@@ -1299,9 +1488,17 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
           <label>Threads</label>
           <input id="gThreads" type="number" value="5" min="1" max="50">
         </div>
+        <div class="field">
+          <label>Use Proxy</label>
+          <select id="gProxy">
+            <option value="false">OFF — direct (fast)</option>
+            <option value="true">ON — free proxy pool (safe)</option>
+          </select>
+        </div>
       </div>
       <div class="btn-row">
         <button id="btnGen" onclick="startGen()">🚀 Start Generate</button>
+        <button class="danger" id="btnStopGen" onclick="stopAll()">⛔ STOP</button>
         <button class="alt" onclick="refreshAll()">🔄 Refresh</button>
         <button class="danger" onclick="resetAll()">🗑️ Reset All</button>
         <button class="gold" onclick="downloadGen()">⬇️ Download Generated</button>
@@ -1334,25 +1531,19 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
     </div>
   </div>
 
-  <!-- ═══════ ACTIVATOR PANEL ═══════ -->
+  <!-- ═══ ACTIVATOR ═══ -->
   <div id="panelAct" class="hide">
     <div class="card">
       <h2>🚀 Account Activator</h2>
-      <p style="color:#888;font-size:0.85rem;margin-bottom:14px;">
-        Activates all currently generated accounts. Logs each account online.
-      </p>
       <div class="row">
         <div class="field">
           <label>Threads</label>
           <input id="aThreads" type="number" value="5" min="1" max="50">
         </div>
-        <div class="field">
-          <label>Batch Size</label>
-          <input id="aBatch" type="number" value="30" min="1" max="200">
-        </div>
       </div>
       <div class="btn-row">
         <button class="gold" id="btnAct" onclick="startAct()">🚀 Start Activation</button>
+        <button class="danger" id="btnStopAct" onclick="stopAll()">⛔ STOP</button>
         <button class="alt" onclick="refreshAll()">🔄 Refresh</button>
         <button class="gold" onclick="downloadAct()">⬇️ Download Activated</button>
         <button class="danger" onclick="clearAct()">🗑️ Clear Activation</button>
@@ -1395,12 +1586,40 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
     </div>
   </div>
 
+  <!-- ═══ PROXY ═══ -->
+  <div id="panelProxy" class="hide">
+    <div class="card">
+      <h2>🌐 Proxy Pool Status</h2>
+      <div class="stats">
+        <div class="stat"><div class="val" id="pSize">0</div><div class="lbl">Working Proxies</div></div>
+        <div class="stat"><div class="val" id="pFetch">—</div><div class="lbl">Fetching</div></div>
+        <div class="stat"><div class="val" id="pUse">—</div><div class="lbl">In Use</div></div>
+      </div>
+      <p style="color:#888;font-size:0.85rem;margin-top:12px;">
+        Auto-fetch every 10 minutes. <span class="proxy-tag">Free proxies = slow but safe</span>
+      </p>
+      <div class="btn-row">
+        <button class="alt" onclick="refreshProxy()">🔄 Refresh Status</button>
+        <button class="gold" onclick="fetchProxy()">⬇️ Force Fetch Now</button>
+      </div>
+    </div>
+    <div class="card">
+      <h2>🔍 Sample Proxies</h2>
+      <div class="scroll" style="max-height:300px;">
+        <table>
+          <thead><tr><th>#</th><th>Proxy</th></tr></thead>
+          <tbody id="pBody"><tr><td colspan="2" class="empty">No proxies loaded yet.</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
 </div>
 
 <div class="toast" id="toast">Done</div>
 
 <script>
-let pollGen = null, pollAct = null;
+let pollGen = null, pollAct = null, pollProxy = null;
 
 function toast(msg, isErr=false) {
   const t = document.getElementById('toast');
@@ -1414,8 +1633,11 @@ function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'
 function switchTab(tab) {
   document.getElementById('panelGen').classList.toggle('hide', tab !== 'gen');
   document.getElementById('panelAct').classList.toggle('hide', tab !== 'act');
+  document.getElementById('panelProxy').classList.toggle('hide', tab !== 'proxy');
   document.getElementById('tabGen').classList.toggle('active', tab === 'gen');
   document.getElementById('tabAct').classList.toggle('active', tab === 'act');
+  document.getElementById('tabProxy').classList.toggle('active', tab === 'proxy');
+  if (tab === 'proxy') startProxyPoll();
   refreshAll();
 }
 
@@ -1424,10 +1646,11 @@ async function startGen() {
   const region  = document.getElementById('gRegion').value;
   const count   = parseInt(document.getElementById('gCount').value) || 10;
   const threads = parseInt(document.getElementById('gThreads').value) || 5;
+  const useProxy = document.getElementById('gProxy').value;
 
   document.getElementById('btnGen').disabled = true;
   try {
-    const url = `/account_gen?name=${encodeURIComponent(name)}&regin=${encodeURIComponent(region)}&count=${count}&threads=${threads}`;
+    const url = `/account_gen?name=${encodeURIComponent(name)}&regin=${encodeURIComponent(region)}&count=${count}&threads=${threads}&use_proxy=${useProxy}`;
     const r = await fetch(url);
     const j = await r.json();
     if (r.ok) { toast(`🚀 Forge started: ${count} accounts`); startGenPoll(); }
@@ -1465,7 +1688,10 @@ function renderGen(j) {
 
   const pill = document.getElementById('gPill');
   const stxt = document.getElementById('gText');
-  if (j.running) {
+  if (j.stopped) {
+    pill.className = 'status-pill pill-stop'; pill.textContent = 'STOPPED';
+    stxt.textContent = `Stopped at ${accs.length}/${j.target}`;
+  } else if (j.running) {
     pill.className = 'status-pill pill-run'; pill.textContent = 'RUNNING';
     stxt.textContent = `Generating... ${accs.length}/${j.target}`;
   } else if (accs.length > 0) {
@@ -1535,7 +1761,10 @@ function renderAct(j) {
 
   const pill = document.getElementById('aPill');
   const stxt = document.getElementById('aText');
-  if (j.running) {
+  if (j.stopped) {
+    pill.className = 'status-pill pill-stop'; pill.textContent = 'STOPPED';
+    stxt.textContent = `Stopped · Active: ${accs.length} · Failed: ${fails.length}`;
+  } else if (j.running) {
     pill.className = 'status-pill pill-run'; pill.textContent = 'RUNNING';
     stxt.textContent = `Activating... ${accs.length}/${tot} (${fails.length} failed)`;
   } else if (accs.length > 0 || fails.length > 0) {
@@ -1574,7 +1803,55 @@ function renderAct(j) {
   }
 }
 
+async function refreshProxy() {
+  try {
+    const r = await fetch('/proxy_status');
+    const j = await r.json();
+    document.getElementById('pSize').textContent  = j.pool_size || 0;
+    document.getElementById('pFetch').textContent = j.fetching ? 'YES' : 'NO';
+    document.getElementById('pUse').textContent   = j.use_proxy ? 'ON' : 'OFF';
+
+    const tb = document.getElementById('pBody');
+    const sample = j.sample || [];
+    if (sample.length === 0) {
+      tb.innerHTML = '<tr><td colspan="2" class="empty">No proxies loaded yet.</td></tr>';
+    } else {
+      tb.innerHTML = sample.map((p,i)=>`
+        <tr><td class="mono">${i+1}</td><td class="mono" style="color:#ffb700;">${esc(p)}</td></tr>
+      `).join('');
+    }
+  } catch(e){}
+}
+
+function startProxyPoll() {
+  if (pollProxy) clearInterval(pollProxy);
+  pollProxy = setInterval(refreshProxy, 3000);
+  refreshProxy();
+}
+
+async function fetchProxy() {
+  try {
+    const r = await fetch('/proxy_fetch', {method:'POST'});
+    const j = await r.json();
+    toast('⬇️ Fetching proxies...');
+    setTimeout(refreshProxy, 5000);
+  } catch(e){ toast('❌ '+e.message, true); }
+}
+
 function refreshAll() { refreshGen(); refreshAct(); }
+
+async function stopAll() {
+  try {
+    const r = await fetch('/stop', {method:'POST'});
+    const j = await r.json();
+    if (r.ok) {
+      toast('⛔ Stopped');
+      document.getElementById('btnGen').disabled = false;
+      document.getElementById('btnAct').disabled = false;
+      setTimeout(refreshAll, 500);
+    }
+  } catch(e) { toast('❌ '+e.message, true); }
+}
 
 async function resetAll() {
   if (!confirm('Clear all accounts & state?')) return;
@@ -1582,7 +1859,6 @@ async function resetAll() {
     const r = await fetch('/reset', {method:'POST'});
     const j = await r.json();
     if (r.ok) { toast('🗑️ Reset done'); refreshAll(); }
-    else toast('❌ ' + (j.error || 'Failed'), true);
   } catch(e){ toast('❌ '+e.message, true); }
 }
 
@@ -1592,7 +1868,6 @@ async function clearAct() {
     const r = await fetch('/reset_activated', {method:'POST'});
     const j = await r.json();
     if (r.ok) { toast('🗑️ Activation cleared'); refreshAll(); }
-    else toast('❌ ' + (j.error || 'Failed'), true);
   } catch(e){ toast('❌ '+e.message, true); }
 }
 
@@ -1663,7 +1938,10 @@ class Handler(BaseHTTPRequestHandler):
 
     def log_message(self, *a): pass
 
-    def _start_forge(self, name, region, count, threads=None):
+    def _start_forge(self, name, region, count, threads=None, use_proxy=None):
+        if use_proxy is not None:
+            CONFIG["use_proxy"] = bool(use_proxy)
+
         count = max(1, min(count, MAX_COUNT))
         if threads is None: threads = min(count, 5)
         threads = max(1, min(threads, 50))
@@ -1678,17 +1956,34 @@ class Handler(BaseHTTPRequestHandler):
             CONFIG["region"]       = region
             CONFIG["nick_max_len"] = max(12, len(name) + 4)
             ALL_ACCOUNTS.clear()
-            load_proxies()
+            STOP_GEN.clear()
             STATE.update({
                 "running": True, "target": count,
                 "started_at": int(time.time()), "finished_at": 0,
                 "workers": threads, "region": region,
                 "name_prefix": name, "last_error": None, "failed": 0,
+                "stopped": False,
             })
+
+        # Trigger proxy fetch if needed
+        if CONFIG.get("use_proxy"):
+            with PROXY_POOL_LOCK:
+                pool_low = len(PROXY_POOL) < 5
+            if pool_low and not PROXY_FETCH_RUNNING:
+                threading.Thread(target=_fetch_free_proxies, daemon=True).start()
+            # wait a bit for pool
+            for _ in range(15):
+                with PROXY_POOL_LOCK:
+                    if len(PROXY_POOL) >= 3: break
+                time.sleep(0.5)
+
+        load_proxies()
+
         t = threading.Thread(target=_forge_worker, args=(count, threads), daemon=True)
         t.start()
         return 200, {"ok": True, "message": f"Forge started for {count}",
-                     "name": name, "region": region, "count": count, "threads": threads}
+                     "name": name, "region": region, "count": count,
+                     "threads": threads, "use_proxy": CONFIG.get("use_proxy")}
 
     def _start_activate(self, threads=5):
         with STATE_LOCK:
@@ -1698,18 +1993,18 @@ class Handler(BaseHTTPRequestHandler):
                 return 400, {"error": "No accounts. Generate first."}
             ALL_ACTIVATED.clear()
             ALL_FAILED.clear()
+            STOP_ACT.clear()
             ACT_STATE.update({
                 "running": True, "target": len(ALL_ACCOUNTS),
                 "started_at": int(time.time()), "finished_at": 0,
                 "workers": threads, "last_error": None,
-                "active": 0, "failed": 0,
+                "active": 0, "failed": 0, "stopped": False,
             })
         t = threading.Thread(target=_activate_worker, args=(threads,), daemon=True)
         t.start()
         return 200, {"ok": True, "message": "Activation started",
                      "total": len(ALL_ACCOUNTS), "threads": threads}
 
-    # ── GET ─────────────────────────────────────────────
     def do_GET(self):
         parsed = urlparse(self.path)
         path = parsed.path.rstrip("/") or "/"
@@ -1720,30 +2015,34 @@ class Handler(BaseHTTPRequestHandler):
 
         if path == "/api":
             return self._json(200, {
-                "owner": "@kamod_codex",
-                "channel": "@kamod_codex",
+                "owner": "@kamod_codex", "channel": "@kamod_codex",
                 "endpoints": {
-                    "GET  /":                              "Dashboard",
-                    "GET  /account_gen?name=X&regin=IN&count=10": "Start generator",
-                    "GET  /accounts":                      "List generated",
-                    "POST /activate?threads=5":            "Start activator",
-                    "GET  /activated":                     "List activated + failed",
-                    "POST /reset":                         "Clear all",
-                    "POST /reset_activated":               "Clear activation list",
+                    "GET  /":                                    "Dashboard",
+                    "GET  /account_gen?name=X&regin=IN&count=10":"Start generator",
+                    "GET  /accounts":                            "List generated",
+                    "POST /activate?threads=5":                  "Start activator",
+                    "GET  /activated":                           "List activated + failed",
+                    "GET  /proxy_status":                        "Proxy pool status",
+                    "POST /proxy_fetch":                         "Force proxy fetch",
+                    "POST /stop":                                "Stop all",
+                    "POST /reset":                               "Clear all",
+                    "POST /reset_activated":                     "Clear activation",
                 },
             })
 
         if path == "/account_gen":
             name   = qs.get("name",  qs.get("nick", ["MasteR~"]))[0]
             region = qs.get("regin", qs.get("region", ["IND"]))[0]
-            try:
-                count = int(qs.get("count", ["10"])[0])
-            except ValueError:
-                return self._json(400, {"error": "count must be integer"})
+            try: count = int(qs.get("count", ["10"])[0])
+            except ValueError: return self._json(400, {"error": "count must be integer"})
             t_raw = qs.get("threads", [None])[0]
             try: threads = int(t_raw) if t_raw else None
             except ValueError: threads = None
-            code, obj = self._start_forge(name, region, count, threads)
+            up_raw = qs.get("use_proxy", [None])[0]
+            use_proxy = None
+            if up_raw is not None:
+                use_proxy = str(up_raw).lower() in ("1", "true", "yes", "on")
+            code, obj = self._start_forge(name, region, count, threads, use_proxy)
             return self._json(code, obj)
 
         if path == "/accounts":
@@ -1752,6 +2051,7 @@ class Handler(BaseHTTPRequestHandler):
                     "owner": "@kamod_codex", "channel": "@kamod_codex",
                     "count": len(ALL_ACCOUNTS), "target": STATE["target"],
                     "running": STATE["running"], "failed": STATE["failed"],
+                    "stopped": STATE.get("stopped", False),
                     "region": STATE["region"], "name_prefix": STATE["name_prefix"],
                     "accounts": list(ALL_ACCOUNTS),
                 })
@@ -1761,6 +2061,7 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json(200, {
                     "owner": "@kamod_codex", "channel": "@kamod_codex",
                     "running": ACT_STATE["running"],
+                    "stopped": ACT_STATE.get("stopped", False),
                     "target": ACT_STATE["target"],
                     "total_accounts": len(ALL_ACCOUNTS),
                     "active_count": len(ALL_ACTIVATED),
@@ -1768,6 +2069,16 @@ class Handler(BaseHTTPRequestHandler):
                     "last_error": ACT_STATE["last_error"],
                     "activated": list(ALL_ACTIVATED),
                     "failed_list": list(ALL_FAILED),
+                })
+
+        if path == "/proxy_status":
+            with PROXY_POOL_LOCK:
+                return self._json(200, {
+                    "pool_size": len(PROXY_POOL),
+                    "last_fetch": PROXY_LAST_FETCH,
+                    "fetching": PROXY_FETCH_RUNNING,
+                    "use_proxy": CONFIG.get("use_proxy"),
+                    "sample": PROXY_POOL[:10],
                 })
 
         if path == "/status":
@@ -1778,22 +2089,11 @@ class Handler(BaseHTTPRequestHandler):
                     "generated_count": len(ALL_ACCOUNTS),
                     "activated_count": len(ALL_ACTIVATED),
                     "failed_count":     len(ALL_FAILED),
+                    "proxy_pool":       len(PROXY_POOL),
                 })
-
-        if path == "/reset":
-            with STATE_LOCK:
-                if STATE["running"] or ACT_STATE["running"]:
-                    return self._json(409, {"error": "Busy"})
-                ALL_ACCOUNTS.clear(); ALL_ACTIVATED.clear(); ALL_FAILED.clear()
-                STATE.update({"target":0,"started_at":0,"finished_at":0,
-                              "last_error":None,"region":"IND","name_prefix":"MasteR~","failed":0})
-                ACT_STATE.update({"target":0,"started_at":0,"finished_at":0,
-                                  "last_error":None,"active":0,"failed":0})
-            return self._json(200, {"ok": True, "message": "Cleared"})
 
         return self._json(404, {"error": "not found", "path": path})
 
-    # ── POST ────────────────────────────────────────────
     def do_POST(self):
         parsed = urlparse(self.path)
         path = parsed.path.rstrip("/") or "/"
@@ -1809,8 +2109,8 @@ class Handler(BaseHTTPRequestHandler):
             t_raw = req.get("threads")
             try: threads = int(t_raw) if t_raw is not None else None
             except (TypeError, ValueError): threads = None
-            CONFIG["use_proxy"] = bool(req.get("use_proxy", False))
-            code, obj = self._start_forge(name, region, count, threads)
+            use_proxy = req.get("use_proxy", None)
+            code, obj = self._start_forge(name, region, count, threads, use_proxy)
             return self._json(code, obj)
 
         if path == "/activate":
@@ -1821,15 +2121,31 @@ class Handler(BaseHTTPRequestHandler):
             code, obj = self._start_activate(threads)
             return self._json(code, obj)
 
+        if path == "/proxy_fetch":
+            threading.Thread(target=_fetch_free_proxies, daemon=True).start()
+            return self._json(200, {"ok": True, "message": "Proxy fetch started"})
+
+        if path == "/stop":
+            STOP_GEN.set()
+            STOP_ACT.set()
+            with STATE_LOCK:
+                STATE["running"] = False
+                STATE["stopped"] = True
+                ACT_STATE["running"] = False
+                ACT_STATE["stopped"] = True
+            return self._json(200, {"ok": True, "message": "Stopped"})
+
         if path == "/reset":
             with STATE_LOCK:
                 if STATE["running"] or ACT_STATE["running"]:
                     return self._json(409, {"error": "Busy"})
+                STOP_GEN.clear()
+                STOP_ACT.clear()
                 ALL_ACCOUNTS.clear(); ALL_ACTIVATED.clear(); ALL_FAILED.clear()
                 STATE.update({"target":0,"started_at":0,"finished_at":0,
-                              "last_error":None,"region":"IND","name_prefix":"MasteR~","failed":0})
+                              "last_error":None,"region":"IND","name_prefix":"MasteR~","failed":0,"stopped":False})
                 ACT_STATE.update({"target":0,"started_at":0,"finished_at":0,
-                                  "last_error":None,"active":0,"failed":0})
+                                  "last_error":None,"active":0,"failed":0,"stopped":False})
             return self._json(200, {"ok": True, "message": "Cleared"})
 
         if path == "/reset_activated":
@@ -1837,7 +2153,7 @@ class Handler(BaseHTTPRequestHandler):
                 if ACT_STATE["running"]:
                     return self._json(409, {"error": "Activation running"})
                 ALL_ACTIVATED.clear(); ALL_FAILED.clear()
-                ACT_STATE.update({"active":0,"failed":0,"target":0,"last_error":None})
+                ACT_STATE.update({"active":0,"failed":0,"target":0,"last_error":None,"stopped":False})
             return self._json(200, {"ok": True, "message": "Activation list cleared"})
 
         return self._json(404, {"error": "not found"})
@@ -1854,6 +2170,11 @@ def main():
     print(f"Dashboard : http://0.0.0.0:{port}/")
     print(f"API       : http://0.0.0.0:{port}/api")
     print()
+
+    # Start proxy watchdog
+    threading.Thread(target=_proxy_watchdog, daemon=True).start()
+    print("[PROXY] watchdog started")
+
     server = ThreadingHTTPServer(("0.0.0.0", port), Handler)
     try:
         server.serve_forever()
