@@ -1,6 +1,3 @@
 requests
 httpx
 pycryptodome
-blackboxprotobuf
-protobuf-decoder
-protobuf>=5.26.0

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-KAMOD WILL RISE — Forge + Activator Dashboard (v9 - All-In-One Replit Ready)
+KAMOD WILL RISE — Forge + Activator Dashboard (v11 - 100% Crash Free)
 Owner  : @kamod_codex
 Channel: @kamod_codex
 """
@@ -18,37 +18,10 @@ from Crypto.Cipher import AES
 from Crypto.Util.Padding import pad
 
 try:
-    import blackboxprotobuf
-except ImportError:
-    os.system("pip install blackboxprotobuf -q")
-    import blackboxprotobuf
-
-try:
     import httpx
 except ImportError:
     os.system("pip install httpx -q")
     import httpx
-
-try:
-    from protobuf_decoder.protobuf_decoder import Parser
-except ImportError:
-    os.system("pip install protobuf-decoder -q")
-    from protobuf_decoder.protobuf_decoder import Parser
-
-# ═══════════════════════════════════════════════════════════
-#  🔥 INJECTED MASTERTeam_pb2 (NO EXTRA FILES NEEDED)
-# ═══════════════════════════════════════════════════════════
-from google.protobuf import descriptor as _descriptor
-from google.protobuf import descriptor_pool as _descriptor_pool
-from google.protobuf import symbol_database as _symbol_database
-from google.protobuf.internal import builder as _builder
-
-_sym_db = _symbol_database.Default()
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0fthunderFF.proto\"\x87\x0b\n\rMajorLoginReq\x12\x12\n\nevent_time\x18\x03 \x01(\t\x12\x11\n\tgame_name\x18\x04 \x01(\t\x12\x13\n\x0bplatform_id\x18\x05 \x01(\x05\x12\x16\n\x0e\x63lient_version\x18\x07 \x01(\t\x12\x17\n\x0fsystem_software\x18\x08 \x01(\t\x12\x17\n\x0fsystem_hardware\x18\t \x01(\t\x12\x18\n\x10telecom_operator\x18\n \x01(\t\x12\x14\n\x0cnetwork_type\x18\x0b \x01(\t\x12\x14\n\x0cscreen_width\x18\x0c \x01(\r\x12\x15\n\rscreen_height\x18\r \x01(\r\x12\x12\n\nscreen_dpi\x18\x0e \x01(\t\x12\x19\n\x11processor_details\x18\x0f \x01(\t\x12\x0e\n\x06memory\x18\x10 \x01(\r\x12\x14\n\x0cgpu_renderer\x18\x11 \x01(\t\x12\x13\n\x0bgpu_version\x18\x12 \x01(\t\x12\x18\n\x10unique_device_id\x18\x13 \x01(\t\x12\x11\n\tclient_ip\x18\x14 \x01(\t\x12\x10\n\x08language\x18\x15 \x01(\t\x12\x0f\n\x07open_id\x18\x16 \x01(\t\x12\x14\n\x0copen_id_type\x18\x17 \x01(\t\x12\x13\n\x0b\x64\x65vice_type\x18\x18 \x01(\t\x12\x31\n\x10memory_available\x18\x19 \x01(\x0b\x32\x17.MajorLoginGameSecurity\x12\x14\n\x0c\x61\x63\x63\x65ss_token\x18\x1d \x01(\t\x12\x17\n\x0fplatform_sdk_id\x18\x1e \x01(\x05\x12\x1a\n\x12network_operator_a\x18) \x01(\t\x12\x16\n\x0enetwork_type_a\x18* \x01(\t\x12\x1c\n\x14\x63lient_using_version\x18\x39 \x01(\t\x12\x1e\n\x16\x65xternal_storage_total\x18< \x01(\x05\x12\"\n\x1a\x65xternal_storage_available\x18= \x01(\x05\x12\x1e\n\x16internal_storage_total\x18> \x01(\x05\x12\"\n\x1ainternal_storage_available\x18? \x01(\x05\x12#\n\x1bgame_disk_storage_available\x18@ \x01(\x05\x12\x1f\n\x17game_disk_storage_total\x18\x41 \x01(\x05\x12%\n\x1d\x65xternal_sdcard_avail_storage\x18\x42 \x01(\x05\x12%\n\x1d\x65xternal_sdcard_total_storage\x18\x43 \x01(\x05\x12\x10\n\x08login_by\x18I \x01(\x05\x12\x14\n\x0clibrary_path\x18J \x01(\t\x12\x12\n\nreg_avatar\x18L \x01(\x05\x12\x15\n\rlibrary_token\x18M \x01(\t\x12\x14\n\x0c\x63hannel_type\x18N \x01(\x05\x12\x10\n\x08\x63pu_type\x18O \x01(\x05\x12\x18\n\x10\x63pu_architecture\x18Q \x01(\t\x12\x1b\n\x13\x63lient_version_code\x18S \x01(\t\x12\x14\n\x0cgraphics_api\x18V \x01(\t\x12\x1d\n\x15supported_astc_bitset\x18W \x01(\r\x12\x1a\n\x12login_open_id_type\x18X \x01(\x05\x12\x18\n\x10\x61nalytics_detail\x18Y \x01(\x0c\x12\x14\n\x0cloading_time\x18\\ \x01(\r\x12\x17\n\x0frelease_channel\x18] \x01(\t\x12\x12\n\nextra_info\x18^ \x01(\t\x12 \n\x18\x61ndroid_engine_init_flag\x18_ \x01(\r\x12\x0f\n\x07if_push\x18\x61 \x01(\x05\x12\x0e\n\x06is_vpn\x18\x62 \x01(\x05\x12\x1c\n\x14origin_platform_type\x18\x63 \x01(\t\x12\x1d\n\x15primary_platform_type\x18\x64 \x01(\t\"?\n\x16MajorLoginGameSecurity\x12\x0f\n\x07version\x18\x06 \x01(\x05\x12\x14\n\x0chidden_value\x18\x08 \x01(\x04\"\x82\x01\n\rMajorLoginRes\x12\x12\n\naccount_id\x18\x01 \x01(\x04\x12\x0e\n\x06region\x18\x02 \x01(\t\x12\r\n\x05token\x18\x08 \x01(\t\x12\x0b\n\x03url\x18\n \x01(\t\x12\x13\n\x0bserver_time\x18\x15 \x01(\x04\x12\x0e\n\x06\x61\x65s_ak\x18\x16 \x01(\x0c\x12\x0c\n\x04iv_i\x18\x17 \x01(\x0c\"Z\n\x0fGetLoginDataRes\x12\x10\n\x08nickname\x18\x04 \x01(\t\x12\x18\n\x10\x66unctional_addrs\x18\x0e \x01(\t\x12\x1b\n\x13informational_addrs\x18  \x01(\t\"\xe0\x01\n\nStartMatch\x12!\n\x04main\x18\x02 \x01(\x0b\x32\x13.StartMatch.nested1\x1a\xae\x01\n\x07nested1\x12\x30\n\x0bregion_list\x18\x07 \x03(\x0b\x32\x1b.StartMatch.nested1.nested2\x12\x33\n\x0e\x63lient_version\x18\x0c \x01(\x0b\x32\x1b.StartMatch.nested1.nested3\x1a\x19\n\x07nested2\x12\x0e\n\x06region\x18\x03 \x01(\t\x1a!\n\x07nested3\x12\x16\n\x0eremote_version\x18\x08 \x01(\tb\x06proto3')
-_globals = globals()
-_builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
-_builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'thunderFF_pb2', _globals)
-# ═══════════════════════════════════════════════════════════
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
@@ -109,6 +82,74 @@ ALL_ACCOUNTS = _load_storage(GEN_TOTAL_FILE)
 ALL_ACTIVATED = _load_storage(ACT_TOTAL_FILE)
 ALL_FAILED = []
 
+# ═══════════════════════════════════════════════════════════
+#  MANUAL PROTOBUF ENCODER (FOR GENERATOR)
+# ═══════════════════════════════════════════════════════════
+def _encode_varint(n: int) -> bytes:
+    if n < 0: n = (1 << 64) + n
+    out = bytearray()
+    while True:
+        b = n & 0x7F
+        n >>= 7
+        if n: b |= 0x80
+        out.append(b)
+        if not n: break
+    return bytes(out)
+
+def encode_message(fields: dict) -> bytes:
+    parts = []
+    for k, v in fields.items():
+        key = int(k)
+        if isinstance(v, dict):
+            nested = encode_message(v)
+            parts.append(_encode_varint((key << 3) | 2) + _encode_varint(len(nested)) + nested)
+        elif isinstance(v, int):
+            parts.append(_encode_varint((key << 3) | 0) + _encode_varint(v))
+        elif isinstance(v, (str, bytes)):
+            ev = v.encode() if isinstance(v, str) else v
+            parts.append(_encode_varint((key << 3) | 2) + _encode_varint(len(ev)) + ev)
+    return b''.join(parts)
+
+def decode_message(data: bytes) -> dict:
+    out = {}
+    i = 0; n = len(data)
+    while i < n:
+        try:
+            key = 0; shift = 0
+            while True:
+                if i >= n: return out
+                b = data[i]; i += 1
+                key |= (b & 0x7F) << shift
+                if not (b & 0x80): break
+                shift += 7
+                if shift > 63: return out
+            fn = key >> 3; wire = key & 0x07
+            if wire == 0:
+                val = 0; shift = 0
+                while True:
+                    if i >= n: return out
+                    b = data[i]; i += 1
+                    val |= (b & 0x7F) << shift
+                    if not (b & 0x80): break
+                    shift += 7
+                    if shift > 63: return out
+                out[fn] = val
+            elif wire == 2:
+                ln = 0; shift = 0
+                while True:
+                    if i >= n: return out
+                    b = data[i]; i += 1
+                    ln |= (b & 0x7F) << shift
+                    if not (b & 0x80): break
+                    shift += 7
+                    if shift > 63: return out
+                if i + ln > n: return out
+                out[fn] = data[i:i+ln]; i += ln
+            elif wire == 5: i += 4
+            elif wire == 1: i += 8
+            else: return out
+        except Exception: return out
+    return out
 
 # ═══════════════════════════════════════════════════════════
 #  IP ROTATOR
@@ -153,7 +194,6 @@ class IPRotator:
             pool = cls._cache.get(region) or []
             if not pool: return f"{random.randint(103,223)}.{random.randint(10,250)}.{random.randint(10,250)}.{random.randint(10,250)}"
             return random.choice(pool)
-
 
 # ═══════════════════════════════════════════════════════════
 #  GEN URLs & CONSTANTS
@@ -354,14 +394,8 @@ def encode_f14(s):
     return bytes(ord(c) ^ ks[i % len(ks)] for i, c in enumerate(s))
 
 # ═══════════════════════════════════════════════════════════
-#  TYPEDEFS
+#  FIELD 22 & HEADERS
 # ═══════════════════════════════════════════════════════════
-def _tf(t): return {'type': t, 'name': ''}
-
-typedef_login = {'3':_tf('bytes'),'4':_tf('bytes'),'5':_tf('int'),'7':_tf('bytes'),'8':_tf('bytes'),'9':_tf('bytes'),'10':_tf('bytes'),'11':_tf('bytes'),'12':_tf('int'),'13':_tf('int'),'14':_tf('bytes'),'15':_tf('bytes'),'16':_tf('int'),'17':_tf('bytes'),'18':_tf('bytes'),'19':_tf('bytes'),'20':_tf('bytes'),'21':_tf('bytes'),'22':_tf('bytes'),'23':_tf('bytes'),'24':_tf('bytes'),'25':_tf('bytes'),'26':_tf('bytes'),'29':_tf('bytes'),'30':_tf('int'),'41':_tf('bytes'),'42':_tf('bytes'),'57':_tf('bytes'),'60':_tf('int'),'61':_tf('int'),'62':_tf('int'),'63':_tf('int'),'64':_tf('int'),'65':_tf('int'),'66':_tf('int'),'67':_tf('int'),'73':_tf('int'),'74':_tf('bytes'),'76':_tf('int'),'77':_tf('bytes'),'78':_tf('int'),'79':_tf('int'),'81':_tf('bytes'),'83':_tf('bytes'),'85':_tf('int'),'86':_tf('bytes'),'87':_tf('int'),'88':_tf('int'),'92':_tf('int'),'93':_tf('bytes'),'94':_tf('bytes'),'96':_tf('bytes'),'97':_tf('int'),'98':_tf('int'),'99':_tf('bytes'),'100':_tf('bytes'),'102':_tf('bytes'),'104':_tf('int'),'105':_tf('int'),'106':_tf('bytes'),'107':_tf('bytes')}
-typedef_reg = {'1':_tf('bytes'),'2':_tf('bytes'),'3':_tf('bytes'),'5':_tf('int'),'6':_tf('int'),'7':_tf('int'),'13':_tf('int'),'14':_tf('bytes'),'15':_tf('bytes'),'16':_tf('int'),'20':_tf('bytes'),'21':_tf('int'),'22':_tf('bytes')}
-typedef_newbie = {'1':_tf('int'),'2':_tf('int'),'3':_tf('int')}
-
 FIELD_22 = bytes.fromhex("4747524501010100620200001052aa0d669c6a368f08338060d2ee0690053af84a41edcd3558556ec10f24f46c93ac64ca41a16732c46a2cb071246a79b8929032f9e1b6f4ef331bd53cabf29b09b97349a46e9863c0314e1a0d80819fef8aabf03876b3d037db354a7ccb5c1bce96411fb3753f6f50e44c69c4ed617fa30efb8ffc0517ff2f636739be1f304d999cfd6fd48bf69454199794c3dc88f55a4bdbd66534d5a061359cdfd1fb680cd37918df9fdb3cf7d80067b0a3506c90063cf62b2ccec11e23913a2fd7c4ef091331967bb518a5ad1e551146b90821be800883abadde39d6c80a5d798611466c748f075481806c5842ce45e6bd4e3368ec08fe2ec41ceb880cd86249eb71693f79f0bccf9e590c3fae12519fe08c7a1905d0927690109e0df28574bb14847225db1a59230e6662ed7730e15ff9a6c815cb41b420edeada735a4b03e181037c37c2c850257311df2f07b0a56e759372cbd0268e3f13a292ee4373e38ab5096e0342a5e0d7fec6da2bbc265d74baadd2b24ee4f74862f82c21d6694bac53f8ce80312a30068a6276a641c19b11d0305c6fe2f531ac7de578b29f543697f5c73663e6f23aa15277b6122dcd4d4171e38f9ac0b173f39c58416a16c5c1f4a35acd065ce78f449cf538a249339e763272d458e4ed86c976591a9c066b3a37111e44091eb6b5a795249f3e5145db022a6055f2cc675936391312f688f89627845df222a91156555225be36f9714a0ba50246d0f003bda3c9c1292ab73b4f79635ddd023218eda93a302d79e023404c14396544a930b98ed54771aca7fec10d095587685b473e81a9619764fad9256529dcd6e911f4f4629612287d4ee3ec5389f6ec4ec020b0e2aac017232a9197be9e46239ce690fe5d4872b2e98e651510c971667f3aca8b59f3e9d50e43")
 
 HEADERS_MSDK = {"User-Agent": "GarenaMSDK/4.0.44(ASUS_AI2501_B ;Android 12;en;US;app 2.132.1 2019118525;)", "Content-Type": "application/json; charset=utf-8", "Connection": "keep-alive"}
@@ -409,17 +443,16 @@ def register_one(worker_id, batch_num):
             hdr = dict(HEADERS_LOGINBP)
             hdr["X-GA-SV"] = str(int(time.time()))
             login_meta = _build_login_meta(open_id, access_token)
-            try: session.post(URL_MAJOR_LOGIN, headers=hdr, data=enc_aes(blackboxprotobuf.encode_message(login_meta, typedef_login)), verify=False, proxies=proxy, timeout=HTTP_TIMEOUT)
+            try: session.post(URL_MAJOR_LOGIN, headers=hdr, data=enc_aes(encode_message(login_meta)), verify=False, proxies=proxy, timeout=HTTP_TIMEOUT)
             except Exception: pass
             nick = gen_nickname()
             reg_msg = {'1': nick, '2': access_token.encode(), '3': open_id.encode(),'5': 102000007, '6': 4, '7': 1, '13': 1,'14': encode_f14(open_id), '15': b'en', '16': 2,'20': GAME_VERSION.encode(), '21': 1, '22': FIELD_22}
-            rr = session.post(URL_MAJOR_REGISTER, headers=hdr, data=enc_aes(blackboxprotobuf.encode_message(reg_msg, typedef_reg)), verify=False, proxies=proxy, timeout=HTTP_TIMEOUT)
+            rr = session.post(URL_MAJOR_REGISTER, headers=hdr, data=enc_aes(encode_message(reg_msg)), verify=False, proxies=proxy, timeout=HTTP_TIMEOUT)
             if rr.status_code != 200: raise Exception(f"majorreg HTTP {rr.status_code}")
-            res, _ = blackboxprotobuf.decode_message(rr.content)
-            account_id = None
-            if isinstance(res, dict): account_id = res.get('3') or res.get(b'3')
+            res = decode_message(rr.content)
+            account_id = res.get(3) if isinstance(res, dict) else None
             if not account_id: raise Exception("no account_id")
-            try: session.post(URL_NEWBIE_CHOICE, headers=hdr, data=enc_aes(blackboxprotobuf.encode_message({'1': int(account_id), '2': 2, '3': 3}, typedef_newbie)), verify=False, proxies=proxy, timeout=HTTP_TIMEOUT)
+            try: session.post(URL_NEWBIE_CHOICE, headers=hdr, data=enc_aes(encode_message({'1': int(account_id), '2': 2, '3': 3})), verify=False, proxies=proxy, timeout=HTTP_TIMEOUT)
             except Exception: pass
             
             nick_str = nick.decode('utf-8', errors='ignore')
@@ -464,7 +497,7 @@ def _forge_worker(target_count, threads, batch_num):
             STATE["finished_at"] = int(time.time())
 
 # ═══════════════════════════════════════════════════════════
-#  🚀 ACTIVATOR
+#  🚀 ACTIVATOR (Manual Proto Parsing)
 # ═══════════════════════════════════════════════════════════
 REGIONAL_LOGIN_HOSTS = {"IND": "https://client.ind.freefiremobile.com/","BD":  "https://client.bd.freefiremobile.com/","SG":  "https://client.sg.freefiremobile.com/","BR":  "https://client.br.freefiremobile.com/","US":  "https://client.us.freefiremobile.com/","EU":  "https://client.eu.freefiremobile.com/","ME":  "https://client.me.freefiremobile.com/"}
 MAJORLOGIN_FALLBACK_HOSTS = ["https://client.ind.freefiremobile.com/","https://client.bd.freefiremobile.com/","https://loginbp.ppmainecoonghj.com/","https://loginbp.ggmainecoonghj.com/","https://loginbp.ggblueshark.com/","https://loginbp.commonmainecoonghj.com/","https://indnetwork.ggblueshark.com/","https://indgigateway.ggblueshark.com/"]
@@ -513,92 +546,81 @@ async def _get_access_token(uid, password):
         await asyncio.sleep(0.3)
     return None
 
-async def _build_majorlogin_payload_pb2(open_id, access_token, platform, client_version, device_info):
+def _build_majorlogin_payload_manual(open_id, access_token, platform, client_version, device_info):
     try:
-        req = _globals['MajorLoginReq']()
-        req.event_time = str(datetime.now())[:-7]
-        req.game_name = "free fire"
-        req.platform_id = int(platform)
-        req.client_version = str(client_version) if client_version else "1.132.9"
-        req.system_software = str(device_info.get("system_software", "Android OS 15 / API-35"))
-        req.system_hardware = "Handheld"
-        req.telecom_operator = "Telkomsel"
-        req.network_type = "CarrierDataNetwork"
-        req.screen_width = int(device_info.get("screen_width", 1639))
-        req.screen_height = int(device_info.get("screen_height", 720))
-        req.screen_dpi = str(device_info.get("screen_dpi", 320))
-        req.processor_details = str(device_info.get("processor_details", "ARM64 FP ASIMD AES | 2000 | 8"))
-        req.memory = int(device_info.get("memory", 5653))
-        req.gpu_renderer = str(device_info.get("gpu_renderer", "Mali-G52 MC2"))
-        req.gpu_version = "OpenGL ES 3.2 v1.r49p1-03bet0.19498e0ae1d5dac223383c39a2e58f04"
-        req.unique_device_id = str(device_info.get("unique_device_id", f"Google|{uuid.uuid4()}"))
-        req.client_ip = str(device_info.get("client_ip", "182.5.135.225"))
-        req.language = "en"
-        req.open_id = str(open_id)
-        req.open_id_type = str(platform)
-        req.device_type = "Handheld"
-        req.access_token = str(access_token)
-        req.platform_sdk_id = 1
-        req.network_operator_a = "Telkomsel"
-        req.network_type_a = "4G"
-        req.client_using_version = "7428b253defc164018c604a1ebbfebdf"
-        req.external_storage_total = 109278
-        req.external_storage_available = 55402
-        req.internal_storage_total = 868
-        req.game_disk_storage_available = 55927
-        req.internal_storage_available = 109278
-        req.game_disk_storage_total = 55927
-        req.external_sdcard_avail_storage = 109278
-        req.external_sdcard_total_storage = 2
-        req.library_path = "/data/app/~~6Cw028g_ld-8Z0z2qhrOLA==/com.dts.freefireth-i3wiaEmpx8CbiRVhUMx_ag==/lib/arm64"
-        req.reg_avatar = 1
-        req.library_token = "b8e0cd5e295eee42f5860d3c86e483dd|/data/app/~~6Cw028g_ld-8Z0z2qhrOLA==/com.dts.freefireth-i3wiaEmpx8CbiRVhUMx_ag==/base.apk"
-        req.channel_type = 3
-        req.cpu_type = 2
-        req.cpu_architecture = "64"
-        req.client_version_code = "2019121229"
-        req.graphics_api = "OpenGLES2"
-        req.supported_astc_bitset = 8191
-        req.login_open_id_type = int(platform)
-        req.analytics_detail = "KqsHTyb7yHjsAiyNWUUZa0DSOD6U0AhDQ76smAo1WeHHHpSmJ8KMRyRrxb2ttgJqO9YOqO/K6AORAvDMAX/qBS8+JahIkrM7kHfzlfULbgRAoZ9r".encode('utf-8')
-        req.loading_time = 111207
-        req.extra_info = "{\"cur_rate\":[60,90,120],\"support_etc2\":false}"
-        req.android_engine_init_flag = 1
-        req.if_push = 1
-        req.is_vpn = 1
-        req.origin_platform_type = str(platform)
-        req.primary_platform_type = str(platform)
-        return _act_aes_encrypt(req.SerializeToString())
-    except Exception: return None
+        payload_dict = {
+            3:  str(datetime.now())[:-7], 4:  "free fire", 5:  "1",
+            7:  str(client_version) if client_version else "1.132.9",
+            8:  str(device_info.get("system_software", "Android OS 15 / API-35")), 9:  "Handheld",
+            10: "Telkomsel", 11: "CarrierDataNetwork",
+            12: str(device_info.get("screen_width", 1639)), 13: str(device_info.get("screen_height", 720)),
+            14: str(device_info.get("screen_dpi", 320)), 15: str(device_info.get("processor_details", "ARM64 FP ASIMD AES | 2000 | 8")),
+            16: str(device_info.get("memory", 5653)), 17: str(device_info.get("gpu_renderer", "Mali-G52 MC2")),
+            18: "OpenGL ES 3.2 v1.r49p1-03bet0.19498e0ae1d5dac223383c39a2e58f04",
+            19: str(device_info.get("unique_device_id", f"Google|{uuid.uuid4()}")),
+            20: str(device_info.get("client_ip", "182.5.135.225")), 21: "en", 22: str(open_id),
+            23: str(platform), 24: "Handheld", 25: str(device_info.get("model", "Xiaomi 2409BRN2CY")),
+            26: "ID", 29: str(access_token), 30: "1", 41: "Telkomsel", 42: "4G",
+            57: "7428b253defc164018c604a1ebbfebdf", 60: "109278", 61: "55402", 62: "868", 64: "55927",
+            65: "109278", 66: "55927", 67: "109278", 73: "2",
+            74: "/data/app/~~6Cw028g_ld-8Z0z2qhrOLA==/com.dts.freefireth-i3wiaEmpx8CbiRVhUMx_ag==/lib/arm64", 76: "1",
+            77: "b8e0cd5e295eee42f5860d3c86e483dd|/data/app/~~6Cw028g_ld-8Z0z2qhrOLA==/com.dts.freefireth-i3wiaEmpx8CbiRVhUMx_ag==/base.apk",
+            78: "3", 79: "2", 81: "64", 83: "2019121229", 85: "3", 86: "OpenGLES2", 87: "8191", 88: str(platform),
+            90: "Cirebon", 91: "JB", 92: "14466", 93: "android",
+            94: "KqsHTyb7yHjsAiyNWUUZa0DSOD6U0AhDQ76smAo1WeHHHpSmJ8KMRyRrxb2ttgJqO9YOqO/K6AORAvDMAX/qBS8+JahIkrM7kHfzlfULbgRAoZ9r",
+            95: "111207", 96: "{\"cur_rate\":[60,90,120],\"support_etc2\":false}",
+            97: "1", 98: "1", 99: str(platform), 100: str(platform), 102: "D]C\x15\x05T\x0eU3",
+            103: "1", 104: "52837", 105: "1",
+            106: "https://dl.gmc.freefiremobile.com/live/ABHotUpdates/|https://core-gmc.freefiremobile.com/live/ABHotUpdates/|211c933168f55902c7dfbfd8c4e2957d",
+            107: "1.3fb8adbf45f44ce9",
+        }
+        return _act_aes_encrypt(encode_message(payload_dict))
+    except Exception as e:
+        print(f"[ACT] payload build error: {e}")
+        return None
 
-async def _try_majorlogin_pb2(base_url, data, release_version):
+def _parse_majorlogin_manual(raw: bytes):
+    for offset in range(min(200, len(raw))):
+        try:
+            f = decode_message(raw[offset:])
+            if 1 in f and 2 in f and 8 in f:
+                return {
+                    "account_id": f.get(1),
+                    "region":     f.get(2, b"").decode("utf-8", "ignore") if isinstance(f.get(2), bytes) else str(f.get(2)),
+                    "token":      f.get(8, b"").decode("utf-8", "ignore") if isinstance(f.get(8), bytes) else str(f.get(8)),
+                    "url":        f.get(10, b"").decode("utf-8", "ignore") if isinstance(f.get(10), bytes) else "",
+                    "server_time": f.get(21, 0),
+                    "aes_ak":     f.get(22, b""), "iv_i": f.get(23, b""),
+                }
+        except Exception: continue
+    return None
+
+def _parse_getlogin_manual(raw: bytes):
+    for offset in range(min(200, len(raw))):
+        try:
+            f = decode_message(raw[offset:])
+            if 4 in f or 14 in f or 32 in f:
+                def _s(x): return x.decode("utf-8", "ignore") if isinstance(x, bytes) else (str(x) if x is not None else "")
+                return {
+                    "nickname": _s(f.get(4, "")), "functional_addrs": _s(f.get(14, "")),
+                    "informational_addrs": _s(f.get(32, "")),
+                    "level": f.get(6, 1) if isinstance(f.get(6), int) else 1,
+                    "region": _s(f.get(3, "")),
+                }
+        except Exception: continue
+    return None
+
+async def _try_majorlogin_manual(base_url, data, release_version):
     client = _get_act_client()
     url = f"{base_url.rstrip('/')}/MajorLogin"
     hdrs = {'User-Agent': 'UnityPlayer/2018.4.12f1 (UnityWebRequest/1.0, libcurl/8.5.0-DEV)','Connection': 'Keep-Alive','Accept-Encoding': 'gzip','Content-Type': 'application/octet-stream','X-Unity-Version': '2018.4.12f1','X-GA-SV': '1789535859','X-GA': 'v1 1','ReleaseVersion': release_version}
     try:
         r = await client.post(url, headers=hdrs, content=data)
         if r.status_code != 200 or len(r.content) < 20: return None
-        try:
-            res_proto = _globals['MajorLoginRes']()
-            res_proto.ParseFromString(r.content)
-            if res_proto.region and res_proto.token: return res_proto
-        except Exception: pass
-        if len(r.content) > 64:
-            try:
-                res_proto = _globals['MajorLoginRes']()
-                res_proto.ParseFromString(r.content[64:])
-                if res_proto.region and res_proto.token: return res_proto
-            except Exception: pass
-        for offset in range(min(160, len(r.content))):
-            try:
-                candidate = _globals['MajorLoginRes']()
-                candidate.ParseFromString(r.content[offset:])
-                if candidate.region and candidate.token: return candidate
-            except Exception: continue
+        return _parse_majorlogin_manual(r.content)
     except Exception: return None
-    return None
 
-async def _try_getlogin_pb2(base_url, data, token, release_version):
+async def _try_getlogin_manual(base_url, data, token, release_version):
     client = _get_act_client()
     url = f"{base_url.rstrip('/')}/GetLoginData"
     hdrs = {'User-Agent': 'UnityPlayer/2018.4.12f1 (UnityWebRequest/1.0, libcurl/8.5.0-DEV)','Connection': 'Keep-Alive','Accept-Encoding': 'gzip','Content-Type': 'application/octet-stream','X-Unity-Version': '2018.4.12f1','X-GA-SV': '1789535859','X-GA': 'v1 1','ReleaseVersion': release_version,'Authorization': f"Bearer {token}"}
@@ -609,29 +631,7 @@ async def _try_getlogin_pb2(base_url, data, token, release_version):
     try:
         r = await client.post(url, headers=hdrs, content=data)
         if r.status_code != 200: return None
-        res_proto = _globals['GetLoginDataRes']()
-        parsed = False
-        try:
-            res_proto.ParseFromString(r.content)
-            if res_proto.functional_addrs or res_proto.informational_addrs: parsed = True
-        except Exception: pass
-        if not parsed:
-            for offset in range(min(160, len(r.content))):
-                try:
-                    cand = _globals['GetLoginDataRes']()
-                    cand.ParseFromString(r.content[offset:])
-                    if cand.functional_addrs or cand.informational_addrs:
-                        res_proto = cand; parsed = True; break
-                except Exception: continue
-        if not parsed: return None
-        dict_res = {}
-        try:
-            for r_field in Parser().parse(r.content.hex()):
-                key = str(r_field.field)
-                if r_field.wire_type in ("varint", "string", "bytes"):
-                    dict_res[key] = {"data": r_field.data}
-        except Exception: pass
-        return res_proto, dict_res
+        return _parse_getlogin_manual(r.content)
     except Exception: return None
 
 async def _build_tcp_startup_packet(account_id, token, server_time, key, iv, region="IND", typ='OnLine'):
@@ -695,11 +695,11 @@ async def _activate_single(acc, idx, total, batch_num):
             if tg is None: raise Exception("token grant failed")
             open_id, access_token, platform = tg
             device_info = _random_act_device(uid_input)
-            payload = await _build_majorlogin_payload_pb2(open_id, access_token, platform, client_version, device_info)
+            payload = _build_majorlogin_payload_manual(open_id, access_token, platform, client_version, device_info)
             if payload is None: raise Exception("payload build failed")
             candidates = [server_url.rstrip("/") + "/"] + [h.rstrip("/") + "/" for h in MAJORLOGIN_FALLBACK_HOSTS]
             ml = None
-            tasks = [asyncio.create_task(_try_majorlogin_pb2(b, payload, release_version)) for b in candidates]
+            tasks = [asyncio.create_task(_try_majorlogin_manual(b, payload, release_version)) for b in candidates]
             try:
                 done, pending = await asyncio.wait(tasks, timeout=HOST_RACE_TIMEOUT, return_when=asyncio.FIRST_COMPLETED)
                 for t in done:
@@ -720,24 +720,23 @@ async def _activate_single(acc, idx, total, batch_num):
                 for t in tasks:
                     if not t.done(): t.cancel()
             if ml is None: raise Exception("MajorLogin failed")
-            region = ml.region or "IND"
+            region = ml.get("region") or "IND"
             gl_candidates = []
             reg_host = REGIONAL_LOGIN_HOSTS.get(region.upper())
             if reg_host: gl_candidates.append(reg_host.rstrip("/") + "/")
-            if ml.url: gl_candidates.append(ml.url.rstrip("/") + "/")
+            if ml.get("url"): gl_candidates.append(ml["url"].rstrip("/") + "/")
             for h in MAJORLOGIN_FALLBACK_HOSTS:
                 n = h.rstrip("/") + "/"
                 if n not in gl_candidates: gl_candidates.append(n)
             gl = None
-            gl_dict = {}
-            tasks = [asyncio.create_task(_try_getlogin_pb2(b, payload, ml.token, release_version)) for b in gl_candidates]
+            tasks = [asyncio.create_task(_try_getlogin_manual(b, payload, ml["token"], release_version)) for b in gl_candidates]
             try:
                 done, pending = await asyncio.wait(tasks, timeout=HOST_RACE_TIMEOUT, return_when=asyncio.FIRST_COMPLETED)
                 for t in done:
                     try:
                         r = t.result()
                         if r is not None:
-                            gl, gl_dict = r
+                            gl = r
                             for p in pending: p.cancel()
                             break
                     except Exception: continue
@@ -745,20 +744,20 @@ async def _activate_single(acc, idx, total, batch_num):
                     for t in pending:
                         try:
                             r = await t
-                            if r is not None: gl, gl_dict = r; break
+                            if r is not None: gl = r; break
                         except Exception: continue
             finally:
                 for t in tasks:
                     if not t.done(): t.cancel()
             if gl is None: raise Exception("GetLoginData failed")
-            addrs = gl.functional_addrs
+            addrs = gl.get("functional_addrs")
             if not addrs: raise Exception("no functional_addrs")
             ip, port = addrs.split(":")
             rip = await _resolve_host(ip)
             reader, writer = await asyncio.open_connection(rip, int(port))
             sock = writer.get_extra_info("socket")
             if sock: _optimize_tcp(sock)
-            tcp_hex = await _build_tcp_startup_packet(ml.account_id, ml.token, ml.server_time or int(time.time()), ml.aes_ak or ACT_AES_KEY, ml.iv_i or ACT_AES_IV, region=region, typ="OnLine")
+            tcp_hex = await _build_tcp_startup_packet(ml["account_id"], ml["token"], ml.get("server_time", int(time.time())), ml.get("aes_ak", ACT_AES_KEY), ml.get("iv_i", ACT_AES_IV), region=region, typ="OnLine")
             writer.write(bytes.fromhex(tcp_hex))
             await writer.drain()
             try:
@@ -785,15 +784,10 @@ async def _activate_single(acc, idx, total, batch_num):
                 await asyncio.wait_for(writer.wait_closed(), timeout=0.8)
             except Exception: pass
             
-            lvl = 1
-            try:
-                val = gl_dict.get('6', {}).get('data')
-                if val is not None: lvl = int(val)
-            except Exception: pass
-
-            nick = gl.nickname or input_nick or f"Player_{ml.account_id}"
-            reg  = gl.region if hasattr(gl, 'region') and gl.region else (ml.region or "IND")
-            entry = {"account_name": nick,"account_region": reg,"uid": uid_input,"account_id": str(ml.account_id),"password": password,"nickname": nick,"level": lvl,"status": "activated","activated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
+            lvl = gl.get("level", 1)
+            nick = gl.get("nickname") or input_nick or f"Player_{ml['account_id']}"
+            reg  = gl.get("region") or region
+            entry = {"account_name": nick,"account_region": reg,"uid": uid_input,"account_id": str(ml["account_id"]),"password": password,"nickname": nick,"level": lvl,"status": "activated","activated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")}
             ALL_ACTIVATED.append(entry)
             append_activated(entry, batch_num)
             with STATE_LOCK: ACT_STATE["active"] += 1
